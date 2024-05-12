@@ -42,3 +42,15 @@ Do this:
 Install
 ~~~~~~~
 Using pip, install this library in a `virtualenv`_ (create Python environments that are isolated) - manage dependencies and versions, as well as indirect permissionsa. We won't come into conflict with installed system dependencies, and we won't need install permissions.
+
+.. _virtualenv: https://virtualenv.pypa.io/en/latest/
+
+\*nix
+^^^^^
+
+.. code-block:: console
+
+  pip install virtualenv
+  virtualenv <name-of-env>
+  source <name-of-env>/bin/activate
+  <name-of-env>/bin/pip install google-cloud-aiplatform
