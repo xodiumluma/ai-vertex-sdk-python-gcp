@@ -39,4 +39,6 @@ Do this:
 .. _`Turn on Vertext AI API`: https://cloud.google.com/vertex-ai/docs/start/use-vertex-ai-python-sdk
 .. _`Turn on authentication`: https://googleapis.dev/python/google-api-core/latest/auth.html
 
-
+Install
+~~~~~~~
+Using pip, install this library in a `virtualenv`_ (create Python environments that are isolated) - manage dependencies and versions, as well as indirect permissionsa. We won't come into conflict with installed system dependencies, and we won't need install permissions.
