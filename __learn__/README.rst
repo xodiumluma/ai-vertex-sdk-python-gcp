@@ -24,3 +24,19 @@ Python Vertex AI SDK
 .. _Client Library Documentation: https://cloud.google.com/python/docs/reference/aiplatform/latest
 .. _Product Documentation: https://cloud.google.com/vertex-ai/docs
 
+Getting Started
+---------------
+
+Do this:
+
+1. `Choose/create a Cloud Platform Project`_
+2. `Turn on your project's billing`_
+3. `Turn on Vertext AI API`_
+4. `Turn on authentication`_
+
+.. _`Choose/create a Cloud Platform Project`: https://console.cloud.google.com/project
+.. _`Turn on your project's billing`: https://cloud.google.com/billing/docs/how-to/modify-project#enable_billing_for_a_project
+.. _`Turn on Vertext AI API`: https://cloud.google.com/vertex-ai/docs/start/use-vertex-ai-python-sdk
+.. _`Turn on authentication`: https://googleapis.dev/python/google-api-core/latest/auth.html
+
+
