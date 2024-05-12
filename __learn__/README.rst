@@ -54,3 +54,15 @@ Using pip, install this library in a `virtualenv`_ (create Python environments t
   virtualenv <name-of-env>
   source <name-of-env>/bin/activate
   <name-of-env>/bin/pip install google-cloud-aiplatform
+
+Windows
+^^^^^^^
+
+.. code-block:: console
+
+  pip install virtualenv
+  virtualenv <name-of-windows-env>
+  <name-of-windows-env>\Scripts\activate
+  <name-of-windows-env>\Scripts\pip.exe install google-cloud-aiplatform
+
+  
