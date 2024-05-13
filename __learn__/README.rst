@@ -105,3 +105,33 @@ For GA features use this namespace:
 
     import vertexai
 
+Initialisation
+^^^^^^^^^^^^^^
+Configure the SDK to set commonly used state.
+
+.. code-block:: Python
+
+    aiplatform.init(
+      # GCP project info
+      project='some-project',
+
+      # region
+      location='us-central1',
+
+      # regional Cloud Storage bucket
+      staging_bucket='gs://some_staging_bucket',
+
+      # custom google.auth.credentials.Credentials
+      # this is the default if it's not specified
+      credentials=some_credentials,
+
+      # CMEK resource name, if any, will be applied to all Vertex AI resources
+      encryption_spec_key_name=some_encryption_key_name,
+
+      # experiment name for tracking logged metrics and parameters
+      experiment='some-experiment',
+
+      # experiment's description
+      experiment_description='Some Description of Experiment'
+    
+    )
