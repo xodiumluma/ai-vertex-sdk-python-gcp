@@ -135,3 +135,17 @@ Configure the SDK to set commonly used state.
       experiment_description='Some Description of Experiment'
     
     )
+
+Datasets
+^^^^^^^^
+Vertex AI manages tabular, text, image and video datasets. They can be used downstream to train models via the SDK.
+
+Tabular dataset wait_for_resource_creation
+
+.. code-block:: Python
+
+    my_dataset = aitplatform.TabularDataset.create(
+      display_name="some-dataset", gcs_source=['gs://bucket/path/some-dataset.csv']
+    )
+
+    
