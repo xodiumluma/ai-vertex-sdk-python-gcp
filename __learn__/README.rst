@@ -140,12 +140,33 @@ Datasets
 ^^^^^^^^
 Vertex AI manages tabular, text, image and video datasets. They can be used downstream to train models via the SDK.
 
-Tabular dataset wait_for_resource_creation
+Tabular dataset creation: 
 
 .. code-block:: Python
 
     my_dataset = aitplatform.TabularDataset.create(
       display_name="some-dataset", gcs_source=['gs://bucket/path/some-dataset.csv']
     )
+
+Create and import separately:
+
+.. code-block:: Python
+
+    from google.cloud import aiplatform
+
+    some_dataset = aiplatform.TextDataset.create(
+      display_name="some-dataset"
+    )
+
+    some_dataset.import_data(
+      gcs_source=['gs://path/to/bucket/some_dataset.csv'],
+      import_schema_uri=aiplatform.schema.dataset.ioformat.text.multi_label_classification
+    )
+
+Retrieve previously created dataset:
+
+.. code-block:: Python
+
+    dataset = aiplatform.ImageDataset('projects/some-project/location/us-central1/datasets/{DATASET_ID}')
 
     
