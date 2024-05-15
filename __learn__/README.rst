@@ -169,4 +169,6 @@ Retrieve previously created dataset:
 
     dataset = aiplatform.ImageDataset('projects/some-project/location/us-central1/datasets/{DATASET_ID}')
 
-    
+All the dataset schemas that Vertex AI supports can be found in the :code:`aiplatform.schema.dataset` namespace, Please see `Preparing data docs`_.
+
+.. _Preparing data docs: https://cloud.google.com/ai-platform-unified/docs/datasets/prepare
