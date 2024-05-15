@@ -172,3 +172,23 @@ Retrieve previously created dataset:
 All the dataset schemas that Vertex AI supports can be found in the :code:`aiplatform.schema.dataset` namespace, Please see `Preparing data docs`_.
 
 .. _Preparing data docs: https://cloud.google.com/ai-platform-unified/docs/datasets/prepare
+
+Train Models
+^^^^^^^^^^^^
+With Vertex AI we can train Custom and AutoML models.
+
+Custom model training can be performed with custom Python scripts, custom Python package or container.
+
+**Custom code prep**
+With Vertex AI custom training we can train on datasets and produce Vertex AI models. Your script must:
+
+→ read datasets from environment variables set from the training service: 
+
+.. code-block:: Python
+
+  os.environ['AIP_DATA_FORMAT']         # indicates format of data
+  os.environ['AIP_TRAINING_DATA_URI']   # training split uri
+  os.environ['AIP_VALIDATION_DATA_URI'] # validation split uri
+  os.environ['AIP_TEST_DATA_URI']       # test split uri
+
+For more info, check out `Using a managed dataset in a custom training application`_
