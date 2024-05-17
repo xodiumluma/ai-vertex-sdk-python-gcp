@@ -192,3 +192,11 @@ With Vertex AI custom training we can train on datasets and produce Vertex AI mo
   os.environ['AIP_TEST_DATA_URI']       # test split uri
 
 For more info, check out `Using a managed dataset in a custom training application`_
+
+.. _Custom training apps involving managed datasets: https://cloud.google.com/vertex-ai/docs/training-using-managed-datasets
+
+→ write model artifact to the environment variable set by the training service:
+
+.. code-block:: Python
+
+  os.environ['AIP_MODEL_DIR']
