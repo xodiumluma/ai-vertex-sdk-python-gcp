@@ -246,3 +246,10 @@ Train:
     model_display_name="some-automl-model",
     disable_early_stopping=False,
   )
+
+
+Getting a model:
+
+.. code-block:: Python
+
+  model = aiplatform.Model('/projects/some-project/locations/us-central1/models/{MODEL_ID}')
