@@ -200,3 +200,49 @@ For more info, check out `Using a managed dataset in a custom training applicati
 .. code-block:: Python
 
   os.environ['AIP_MODEL_DIR']
+
+**Training models**
+
+.. code-block:: Python
+
+  job = aiplatform.CustomTrainingJob(
+      display_name="some-training-job",
+      script_path="training_script.py",
+      container_uri="us-docker.pkg.dev/vertex-ai/training/tf-cpu.2.2:latest",
+      requirements=["gcfs==0.7.1"],
+      model_serving_container_image_uri="us-docker.pkg.dev/vertex-ai/prediction/tf2-cpu.2.2:latest",
+  )
+
+  model = job.run(some_dataset,
+      replica_count=1,
+      machine_Type="n1-standard-4",
+      accelerator_type='NVIDIA_TESLA_K80',
+      accelerator_count=1)
+
+Notes: `some_dataset` is a created managed dataset (as per above); `model` is an exportable or deployable Vertex AI model.
+
+AutoML
+------
+Tabular, image, text, video and forecasting-based AutoML is available via Vertex AI SDK.
+
+Train:
+.. code-block:: Python
+
+  dataset = aiplatform.TabularDataset('projects/my-project/location/us-central1/datasets/{DATASET_ID}')
+
+  job = aiplatform.AutoMLTabularTrainingJob(
+    display_name="train-automl",
+    optimization_prediction_type="regression",
+    optimization_objective="minimize-rmse",
+  )
+
+  model = job.run(
+    dataset=dataset,
+    target_column="some_target_column",
+    training_fraction_split=0.6,
+    validation_fraction_split=0.2,
+    test_fraction_split=0.2,
+    budget_milli_node_hours=1000,
+    model_display_name="some-automl-model",
+    disable_early_stopping=False,
+  )
