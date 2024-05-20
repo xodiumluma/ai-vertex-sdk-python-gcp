@@ -253,3 +253,12 @@ Getting a model:
 .. code-block:: Python
 
   model = aiplatform.Model('/projects/some-project/locations/us-central1/models/{MODEL_ID}')
+
+
+Upload model:
+.. code-block:: Python
+  model = aiplatform.Model.upload(
+    display_name='some-model',
+    artifact_uri='gs://path/to/model/dir',
+    serving_container_image_uri='us-docker.pkg.dev/vertex-ai/prediction/tf2-cpu.2-2:latest'
+  )
