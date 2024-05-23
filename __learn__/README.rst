@@ -278,3 +278,42 @@ Deploy model:
 Check out `Importing models to Vertex AI`_ for more info.
 
 .. _Importing models to Vertex AI: https://cloud.google.com/vertex-ai/docs/general/import-model
+
+Evaluation of models
+--------------------
+
+You can get model evaluation metrics for all AutoML models.
+
+List all model evaluations:
+
+.. code-block:: Python
+
+  model = aiplatform.Model('projects/some-project/locations/us-central1/models/{MODEL_ID}')
+  evaluations = model.list_model_evaluations()
+
+Get evaluation resource for a given model:
+
+.. code-block:: Python
+
+  model = aiplatform.Model('projects/some-project/locations/us-central1/models/{MODEL_ID}')
+
+  # first evaluation with no args is returned; evaluation ID can also be passed in
+  evaluation = model.get_model_evaluation()
+  eval_metrics = evaluation.metrics
+
+Create a direct reference to your model evaluation via feeding in the resource name of the model evaluation:
+
+.. code-block:: Python
+
+  evaluation = aiplatform.ModelEvaluation(
+    evaluation_name = 'projects/some-project/locations/us-central1/models/{MODEL_ID}/evaluations/{EVALUATION_ID}'
+  )
+
+Create a reference to the evaluation via model and evaluation IDs as parameters:
+
+.. code-block:: Python
+
+  evaluation = aiplatform.ModelEvaluation(
+    evaluation_name={EVALUATION_ID},
+    model_id={MODEL_ID}
+  )
