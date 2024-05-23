@@ -256,9 +256,25 @@ Getting a model:
 
 
 Upload model:
+
 .. code-block:: Python
   model = aiplatform.Model.upload(
     display_name='some-model',
     artifact_uri='gs://path/to/model/dir',
     serving_container_image_uri='us-docker.pkg.dev/vertex-ai/prediction/tf2-cpu.2-2:latest'
   )
+
+Deploy model:
+
+.. code-block:: Python
+  
+  endpoint = model.deploy(machine_type="n1-standard-4",
+    min_replica_count=1,
+    max_replica_count=5,
+    machine_type='n1-standard-4',
+    accelerator_type='NVIDIA_TESLA_K80',
+    accelerator_count=1)
+
+Check out `Importing models to Vertex AI`_ for more info.
+
+.. _Importing models to Vertex AI: https://cloud.google.com/vertex-ai/docs/general/import-model
