@@ -317,3 +317,21 @@ Create a reference to the evaluation via model and evaluation IDs as parameters:
     evaluation_name={EVALUATION_ID},
     model_id={MODEL_ID}
   )
+
+Batch Prediction
+----------------
+
+Create a batch prediction job:
+
+.. code-block:: Python
+
+  model = aiplatform.Model('/projects/some-project/locations/us-central1/models/{MODEL_ID}')
+
+  batch_prediction_job = model.batch_predict(
+    job_display_name='some-batch-prediction-job',
+    instances_format='csv',
+    machine_type='n1-standard-4',
+    gcs_source=['gs://path/to/some-file.csv'],
+    gcs_destination_prefix='gs://path/to/batch_prediction_results/',
+    service_account='some-sa@some-project.iam.gserviceaccount.com'
+  )
