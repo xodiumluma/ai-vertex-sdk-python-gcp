@@ -335,3 +335,18 @@ Create a batch prediction job:
     gcs_destination_prefix='gs://path/to/batch_prediction_results/',
     service_account='some-sa@some-project.iam.gserviceaccount.com'
   )
+
+Async version of batch prediction:
+
+.. code-block:: Python
+
+  job = model.batch_predict(..., sync=False)
+
+  # create resource and wait
+  job.wait_for_resource_creation()
+
+  # retrieve state
+  job.state
+
+  # block till job is complete
+  job.wait()
