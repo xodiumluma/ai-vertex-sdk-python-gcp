@@ -350,3 +350,25 @@ Async version of batch prediction:
 
   # block till job is complete
   job.wait()
+
+Endpoints
+---------
+
+Create endpoint:
+
+.. code-block:: Python
+
+  endpoint = aiplatform.Endpoint.create(display_name='some-endpoint')
+
+Deploy model to created endpoint:
+
+.. code-block:: Python
+
+  model = aiplatform.Model('/projects/some-project/locations/us-central1/models/{MODEL_ID}')
+
+  endpoint.deploy(model,
+    min_replica_count=1,
+    max_replica_count=5m
+    machine_type='n1-standard-4',
+    accelerator_type='NVIDIA_TESLA_K80',
+    accelerator_count=1)
