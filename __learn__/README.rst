@@ -372,3 +372,21 @@ Deploy model to created endpoint:
     machine_type='n1-standard-4',
     accelerator_type='NVIDIA_TESLA_K80',
     accelerator_count=1)
+
+Retrieving predictions from endpoints:
+
+.. code-block:: Python
+
+  endpoint.predict(instances=[6.7, 3.1, 4.7, 1.5], [4.6, 3.1, 1.5, 0.2])
+
+Reverse endpoint model deployments:
+
+.. code-block:: Python
+
+  endpoint.undeploy_all()
+
+Removing endpoint:
+
+.. code-block:: Python
+
+  endpoint.delete()
