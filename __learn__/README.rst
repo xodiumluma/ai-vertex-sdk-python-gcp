@@ -390,3 +390,43 @@ Removing endpoint:
 .. code-block:: Python
 
   endpoint.delete()
+
+Now about pipelines!
+--------------------
+
+Create a pipeline run and monitor till it's complete:
+
+.. code-block:: Python
+
+  # Instantiate
+  pipeline = PipelineJob(display_name="Some pipeline, ya",
+
+    # Shall we cache? If so pipeline step result is always cached, if not, then never
+    # So True or False. If set to None, then we defer to cache option for each pipeline component as per the pipeline definition
+    enable_caching=False,
+
+    # Local/GCS path to compiled pipeline definition
+    template_path="pipeline.json",
+
+    # Pipeline input parameters dictionary
+    parameter_values=parameter_values,
+
+    # Pipeline root (GCS path)
+    pipeline_root=pipeline_root,)
+
+  # Run pipeline in Vertex AI and monitor till it's documentation
+  pipeline.run(service_account=service_account, # service account email address; need iam.serviceAccounts.actAs permission on the service account
+    sync=True) # synchronous (wait) option; false/async returns the function call immediately
+
+If we want to create a Vertex AI Pipeline that doesn't have monitoring till completion, choose `submit`, not `run`:
+
+.. code-block:: Python
+
+  # Instantiate
+  job = PipelineJob(display_name="some pipeline!",
+      enable_caching=False,
+      template_path="pipeline.json",
+      parameter_values=parameter_values,
+      pipeline_root=pipeline_root,)
+
+  job.submit(service_account=service_account,)
