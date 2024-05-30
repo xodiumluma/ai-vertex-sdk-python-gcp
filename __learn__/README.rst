@@ -430,3 +430,20 @@ If we want to create a Vertex AI Pipeline that doesn't have monitoring till comp
       pipeline_root=pipeline_root,)
 
   job.submit(service_account=service_account,)
+
+Get Metadata - Explainable AI
+-----------------------------
+
+TF 1 models metadata retrieval:
+
+.. code-block:: Python
+
+  from google.cloud.aiplatform.explain.metadata.tf.v1 import saved_model_metedata_builder
+
+  builder = saved_model_metadata_builder.SavedModelMetadataBuilder(
+    'gs://python/path/to/model/dir',
+    tags=[tf.saved_model.tag_constansts.SERVING]
+  )
+  generated_metadata = builder.get_metadata()
+
+  
