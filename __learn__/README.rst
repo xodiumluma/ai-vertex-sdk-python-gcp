@@ -16,7 +16,7 @@ Python Vertex AI SDK
    :target: https://pypi.org/project/google-cloud-aiplatform/
 .. |unit-tests| image:: https://storage.googleapis.com/cloud-devrel-public/python-aiplatform/badges/sdk-unit-tests.svg
    :target: https://storage.googleapis.com/cloud-devrel-public/python-aiplatform/badges/sdk-unit-tests.html
-.. |system-tests| image:: https:://storage.googleapis.com/cloud-devrel-public/python-aiplatform/badges/sdk-system-tests.svg
+.. |system-tests| image:: https://storage.googleapis.com/cloud-devrel-public/python-aiplatform/badges/sdk-system-tests.svg
    :target: https://storage.googleapis.com/cloud-devrel-public/python-aiplatform/badges/sdk-system-tests.html
 .. |sample-tests| image:: https://storage.googleapis.com/cloud-devrel-public/python-aiplatform/badges/sdk-sample-tests.svg
    :target: https://storage.googleapis.com/cloud-devrel-public/python-aiplatform/badges/sdk-sample-tests.html
@@ -208,14 +208,14 @@ For more info, check out `Using a managed dataset in a custom training applicati
   job = aiplatform.CustomTrainingJob(
       display_name="some-training-job",
       script_path="training_script.py",
-      container_uri="us-docker.pkg.dev/vertex-ai/training/tf-cpu.2.2:latest",
-      requirements=["gcfs==0.7.1"],
-      model_serving_container_image_uri="us-docker.pkg.dev/vertex-ai/prediction/tf2-cpu.2.2:latest",
+      container_uri="us-docker.pkg.dev/vertex-ai/training/tf-cpu.2-2:latest",
+      requirements=["gcsfs==0.7.1"],
+      model_serving_container_image_uri="us-docker.pkg.dev/vertex-ai/prediction/tf2-cpu.2-2:latest",
   )
 
   model = job.run(some_dataset,
       replica_count=1,
-      machine_Type="n1-standard-4",
+      machine_type="n1-standard-4",
       accelerator_type='NVIDIA_TESLA_K80',
       accelerator_count=1)
 
@@ -368,7 +368,7 @@ Deploy model to created endpoint:
 
   endpoint.deploy(model,
     min_replica_count=1,
-    max_replica_count=5m
+    max_replica_count=5,
     machine_type='n1-standard-4',
     accelerator_type='NVIDIA_TESLA_K80',
     accelerator_count=1)
@@ -377,7 +377,7 @@ Retrieving predictions from endpoints:
 
 .. code-block:: Python
 
-  endpoint.predict(instances=[6.7, 3.1, 4.7, 1.5], [4.6, 3.1, 1.5, 0.2])
+  endpoint.predict(instances=[[6.7, 3.1, 4.7, 1.5], [4.6, 3.1, 1.5, 0.2]])
 
 Reverse endpoint model deployments:
 
@@ -438,7 +438,7 @@ TF 1 models metadata retrieval:
 
 .. code-block:: Python
 
-  from google.cloud.aiplatform.explain.metadata.tf.v1 import saved_model_metedata_builder
+  from google.cloud.aiplatform.explain.metadata.tf.v1 import saved_model_metadata_builder
 
   builder = saved_model_metadata_builder.SavedModelMetadataBuilder(
     'gs://python/path/to/model/dir',
