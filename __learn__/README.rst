@@ -446,4 +446,12 @@ TF 1 models metadata retrieval:
   )
   generated_metadata = builder.get_metadata()
 
+TF 2 models metadata retrieval:
+
+.. code-block:: Python
+  
+  from google.cloud.aiplatform.explain.metadata.tf.v2 import saved_model_metadata_builder
+
+  builder = saved_model_metadata_builder.SavedModelMetadataBuilder('gs://path/to/model/dir')
+  generated_metadata = builder.get_metadata()
   
