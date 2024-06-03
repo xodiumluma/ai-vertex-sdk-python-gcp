@@ -454,4 +454,18 @@ TF 2 models metadata retrieval:
 
   builder = saved_model_metadata_builder.SavedModelMetadataBuilder('gs://path/to/model/dir')
   generated_metadata = builder.get_metadata()
+
+For Explanation Metadata (endpoint deployment and model upload):
+
+.. code-block:: Python
+  explanation_metadata = builder.get_metadata_protobuf()
+
+  # deploy model to endpoint with explanation
+  model.deploy(..., explanation_metadata=explanation_metadata)
+
+  # deploy model to created endpoint with explanation
+  endpoint.deploy(..., explanation_metadata=explanation_metadata)
+
+  # upload model with explanation
+  aiplatform.Model.upload(..., explanation_metadata=explanation_metadata)
   
