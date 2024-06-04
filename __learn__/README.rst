@@ -487,4 +487,13 @@ Run the job with a Vertex AI Tensorboard instance (https://cloud.google.com/vert
 Go to your GCP TensorBoard > Profile tab > click 'Capture Profile' 
 This way we can see the profiling stats for the running job 
 
+After this!
+-----------
+
+- Read `Client Library Documentation`_
+- Read `Vertex AI API Product docs`_
+- View `README`_ for full list of Cloud APIs
+
+.. _Vertex AI API Product docs: https://cloud.google.com/vertex-ai/docs
+.. _README: https://github.com/googleapis/google-cloud-python/blob/main/README.rst
   
