@@ -39,3 +39,18 @@ def pipeline_client():
   client = aiplatform.gapic.PipelineServiceClient(
     client_options={"api_endpoint": "us-central1-aiplatform.googleapis.com"}
   )
+  return pipeline_client
+
+@pytest.fixture
+def model_client():
+  client = aiplatform.gapic.ModelServiceClient(
+    client_options={"api_endpoint": "us-central1-aiplatform.googleapis.com"}
+  )
+  yield model_client
+
+@pytest.fixture
+def endpoint_client():
+  client = aiplatform.gapic.EndpointServiceClient(
+    client_options={"api_endpoint": "us-central1-aiplatform.googleapis.com"}
+  )
+  yield client
