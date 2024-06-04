@@ -468,4 +468,23 @@ For Explanation Metadata (endpoint deployment and model upload):
 
   # upload model with explanation
   aiplatform.Model.upload(..., explanation_metadata=explanation_metadata)
+
+Cloud Profiler
+--------------
+
+Profile remote Vertex AI Training jobs on demand and see the results in Vertex AI Tensorboard
+
+Update training script with this:
+
+.. code-block:: Python
+  
+  from google.cloud.aiplatform.training_utils import cloud_profiler
+  ...
+  cloud_profiler.init()
+
+Run the job with a Vertex AI Tensorboard instance (https://cloud.google.com/vertex-ai/docs/experiments/tensorboard-overview)
+
+Go to your GCP TensorBoard > Profile tab > click 'Capture Profile' 
+This way we can see the profiling stats for the running job 
+
   
