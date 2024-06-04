@@ -19,3 +19,23 @@ def shared_state():
 def storage_client():
   storage_client = storage.Client()
   return storage_client
+
+@pytest.fixture()
+def job_client():
+  job_client = aiplatform.gapic.JobServiceClient(
+    client_options={"api_endpoint": "us-central1-aiplatform.googleapis.com"}
+  )
+  return job_client
+
+@pytest.fixture()
+def data_labeling_job_client():
+  endpoint = os.getenv("DATA_LABELING_API_ENDPOINT")
+  return aiplatform.gapic.JobServiceClient(
+    client_options={"api_endpoint": endpoint}
+  )
+
+@pytest.fixture
+def pipeline_client():
+  client = aiplatform.gapic.PipelineServiceClient(
+    client_options={"api_endpoint": "us-central1-aiplatform.googleapis.com"}
+  )
