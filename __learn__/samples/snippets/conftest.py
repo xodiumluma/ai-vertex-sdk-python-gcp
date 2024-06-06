@@ -54,3 +54,10 @@ def endpoint_client():
     client_options={"api_endpoint": "us-central1-aiplatform.googleapis.com"}
   )
   yield client
+
+@pytest.fixture
+def dataset_client():
+  client = aiplatform.gapic.DatasetServiceClient(
+    client_options={"api_endpoint": "us-central1-aiplatform.googleapis.com"}
+  )
+  yield dataset_client
