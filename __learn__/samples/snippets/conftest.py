@@ -70,7 +70,7 @@ def featurestore_client():
   yield client
 
 @pytest.fixture
-def bigquery_client()
+def bigquery_client():
   client = bigquery.Client(
     project=os.getenv("BUILD_SPECIFIC_GCLOUD_PROJECT")
   )
