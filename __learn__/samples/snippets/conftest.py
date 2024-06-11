@@ -61,3 +61,17 @@ def dataset_client():
     client_options={"api_endpoint": "us-central1-aiplatform.googleapis.com"}
   )
   yield dataset_client
+
+@pytest.fixture
+def featurestore_client():
+  client = aiplatform_v1beta1.FeaturestoreServiceClient(
+    client_options={"api_endpoint": "us-central1-aiplatform.googleapis.com"}
+  )
+  yield client
+
+@pytest.fixture
+def bigquery_client()
+  client = bigquery.Client(
+    project=os.getenv("BUILD_SPECIFIC_GCLOUD_PROJECT")
+  )
+  yield client
