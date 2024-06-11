@@ -75,3 +75,22 @@ def bigquery_client()
     project=os.getenv("BUILD_SPECIFIC_GCLOUD_PROJECT")
   )
   yield client
+
+# common setup/teardown
+@pytest.fixture()
+def teardown_batch_prediction_job(shared_state, job_client):
+  yield
+
+  job_client.cancel_batch_prediction_job(
+    name=shared_state["batch_prediction_job_name"]
+  )
+
+  # Wait for job to be CANCELLED
+  helpers.wait_for_job_state(
+    get_job_method=job_client.get_batch_prediction_job,
+    name=shared_state["batch_prediction_job_name"]
+  )
+
+  job_client.delete_batch_prediction_job(
+    name=shared_state["batch_prediction_job_name"]
+  )
