@@ -91,7 +91,10 @@ _TEST_PIPELINE = _TEST_EXPERIMENT
 _TEST_RUN = "run-1"
 _TEST_OTHER_RUN = "run-2"
 _TEST_DISPLAY_NAME = "test-display-name"
-_TEST_CREDENTIALS = mock.Mock(spec=credentials.AnonymousCredentials())
+_TEST_CREDENTIALS = mock.Mock(
+    spec=credentials.AnonymousCredentials(),
+    universe_domain="googleapis.com",
+)
 _TEST_BUCKET_NAME = "gs://test-bucket"
 
 # resource attributes
@@ -1815,9 +1818,7 @@ class TestExperiments:
             parent=test_constants.TensorboardConstants._TEST_TENSORBOARD_NAME,
             tensorboard_experiment_id=_TEST_CONTEXT_ID,
             tensorboard_experiment=gca_tensorboard_experiment.TensorboardExperiment(
-                display_name=experiment_run_resource.ExperimentRun._format_tensorboard_experiment_display_name(
-                    _TEST_CONTEXT_ID
-                ),
+                display_name=_TEST_CONTEXT_ID,
                 labels=constants._VERTEX_EXPERIMENT_TB_EXPERIMENT_LABEL,
             ),
             metadata=(),

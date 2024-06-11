@@ -25,13 +25,16 @@ from google import auth
 from google.cloud import aiplatform
 from tests.system.aiplatform import e2e_base
 from vertexai import generative_models
+from vertexai.generative_models import Content
 from vertexai.preview import (
     generative_models as preview_generative_models,
 )
+from vertexai._caching import _caching as caching
 
 GEMINI_MODEL_NAME = "gemini-1.0-pro-002"
 GEMINI_VISION_MODEL_NAME = "gemini-1.0-pro-vision"
 GEMINI_15_MODEL_NAME = "gemini-1.5-pro-preview-0409"
+GEMINI_15_0514_MODEL_NAME = "gemini-1.5-pro-preview-0514"
 
 
 # A dummy function for function calling
@@ -429,3 +432,50 @@ class TestGenerativeModels(e2e_base.TestEndToEnd):
         assert chat.history[-3].parts[0].function_call.name == "get_current_weather"
         assert chat.history[-2].parts[0].function_response
         assert chat.history[-2].parts[0].function_response.name == "get_current_weather"
+
+    def test_additional_request_metadata(self):
+        aiplatform.init(request_metadata=[("foo", "bar")])
+        model = generative_models.GenerativeModel(GEMINI_MODEL_NAME)
+        response = model.generate_content(
+            "Why is sky blue?",
+            generation_config=generative_models.GenerationConfig(temperature=0),
+        )
+        assert response
+
+    def test_generate_content_with_cached_content_from_text(self):
+        cached_content = caching.CachedContent.create(
+            model_name=GEMINI_15_0514_MODEL_NAME,
+            system_instruction="Please answer all the questions like a pirate.",
+            contents=[
+                Content.from_dict(
+                    {
+                        "role": "user",
+                        "parts": [
+                            {
+                                "file_data": {
+                                    "mime_type": "application/pdf",
+                                    "file_uri": "gs://ucaip-samples-us-central1/sdk_system_test_resources/megatro-llm.pdf",
+                                }
+                            }
+                            for _ in range(10)
+                        ]
+                        + [
+                            {"text": "Please try to summarize the previous contents."},
+                        ],
+                    }
+                )
+            ],
+        )
+
+        model = preview_generative_models.GenerativeModel._from_cached_content(
+            cached_content=cached_content
+        )
+
+        response = model.generate_content(
+            "Why is sky blue?",
+            generation_config=generative_models.GenerationConfig(temperature=0),
+        )
+        try:
+            assert response.text
+        finally:
+            cached_content.delete()
