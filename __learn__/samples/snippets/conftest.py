@@ -94,3 +94,32 @@ def teardown_batch_prediction_job(shared_state, job_client):
   job_client.delete_batch_prediction_job(
     name=shared_state["batch_prediction_job_name"]
   )
+
+@pytest.fixture()
+def teardown_data_labeling_job(capsys, shared_state, client):
+  yield
+
+  assert "/" in shared_state["data_labeling_job_name"]
+  
+  client.cancel_data_labeling_job(
+    name=shared_state["data_labeling_job_name"]
+  )
+
+  # confirm that data labelling job is cancelled/timeout after 400 seconds
+  helpers.wait_for_job_state(
+    get_job_method=client.get_data_labeling_job,
+    name=shared_state["data_labeling_job_name"],
+    timeout=400,
+    freq=10
+  )
+
+  # delete job
+  response = client.delete_data_labeling_job(
+    name=shared_state["data_labeling_job_name"]
+  )
+  print("LRO deleted:", response.operation.name)
+  delete_data_labeling_job_response = response.result(timeout=300)
+  print("delete_data_labeling_job_response", delete_data_labeling_job_response)
+
+  out, _ = capsys.readouterr()
+  assert "delete_data_labeling_job_response" in out
