@@ -123,3 +123,23 @@ def teardown_data_labeling_job(capsys, shared_state, client):
 
   out, _ = capsys.readouterr()
   assert "delete_data_labeling_job_response" in out
+
+@pytest.fixture()
+def teardown_hyperparameter_tuning_job(shared_state, client):
+  yield
+
+  # cancel job
+  client.cancel_hyperparameter_tuning_job(
+    name=shared_state["hyperparameter_tuning_job_name"]
+  )
+
+  # wait for job to be in CANCELLED state
+  helpers.wait_for_job_state(
+    get_job_method=client.gethyperparameter_tuning_job,
+    name=shared_state["hyperparameter_tuning_job_name"],
+  )
+  
+  # delete created job
+  client.delete_hyperparameter_tuning_job(
+    name=shared_state["hyperparameter_tuning_job_name"]
+  )
