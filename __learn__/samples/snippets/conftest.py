@@ -143,3 +143,29 @@ def teardown_hyperparameter_tuning_job(shared_state, client):
   client.delete_hyperparameter_tuning_job(
     name=shared_state["hyperparameter_tuning_job_name"]
   )
+
+@pytest.fixture()
+def teardown_training_pipeline(shared_state, client):
+  yield
+
+  try:
+    client.cancel_training_pipeline(
+      name=shared_state["training_pipeline_name"]
+    )
+
+    # wait for pipeline to be in CANCELLED state
+    timeout = shared_state["cancel_batch_prediction_job_timeout"]
+    helpers.wait_for_job_state(
+      get_job_method=client.get_training_pipeline,
+      name=shared_state["training_pipeline_name"],
+      timeout=timeout,
+    )
+  
+  except exceptions.FailedPrecondition:
+    pass # if pipeline failed, ignore and go straight to deletion
+
+  finally:
+    # delete pipeline
+    client.delete_training_pipeline(
+      name=shared_state["training_pipeline_name"]
+    )
