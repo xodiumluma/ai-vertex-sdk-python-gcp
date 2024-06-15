@@ -169,3 +169,22 @@ def teardown_training_pipeline(shared_state, client):
     client.delete_training_pipeline(
       name=shared_state["training_pipeline_name"]
     )
+
+@pytest.fixture()
+def create_dataset(shared_state, client):
+  def create(
+    project,
+    location,
+    metadata_schema_uri,
+    test_name="test_import_dataset_test"
+  ):
+    parent = f"projects/{project}/locations/{location}"
+    dataset = aiplatform.gapic.Dataset(
+      display_name=f"{test_name}_{uuid4()}",
+      metadata_schema_uri=metadata_schema_uri,
+    )
+
+    operation=client.create_dataset(parent=parent, dataset=dataset)
+    shared_state["dataset_name"] = dataset.name
+    
+  yield create
