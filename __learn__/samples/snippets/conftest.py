@@ -188,3 +188,20 @@ def create_dataset(shared_state, client):
     shared_state["dataset_name"] = dataset.name
     
   yield create
+
+@pytest.fixture()
+def teardown_dataset(shared_state, client):
+  yield
+
+  client.delete_dataset(name=shared_state["dataset_name"])
+
+@pytest.fixture()
+def teardown_featurestore(shared_state, client):
+  yield
+
+  force_delete_featurestore_request = {
+    "name": shared_state["featurestore_name"],
+    force: True
+  }
+  
+  client.delete_featurestore(request=force_delete_featurestore_request)
