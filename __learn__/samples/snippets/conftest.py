@@ -222,3 +222,10 @@ def teardown_feature(shared_state, client):
   yield
   
   client.delete_feature(name=shared_state["feature_name"])
+
+@pytest.fixture()
+def teardown_features(shared_state, featurestore_client):
+  yield
+
+  for feature_name in shared_state["feature_names"]:
+    featurestore_client.delete_feature(name=feature_name)
