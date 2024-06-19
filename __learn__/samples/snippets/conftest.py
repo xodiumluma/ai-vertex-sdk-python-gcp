@@ -213,7 +213,7 @@ def teardown_entity_type(shared_state, featurestore_client):
   # force deletion
   force_delete_entity_type_request = {
     "name": shared_state["entity_type_name"],
-    "force": True
+    "force": True,
   }
   featurestore_client.delete_entity_type(request=force_delete_entity_type_request)
 
@@ -239,3 +239,19 @@ def teardown_batch_read_feature_values(shared_state, bigquery_client):
     delete_contents=True,
     not_found_ok=True
   )
+
+@pytest.fixture()
+def create_endpoint(shared_state, endpoint_client):
+  def create(project, location, test_name="temp_deploy_model_test"):
+    parent = f"projects/{project}/locations/{location}"
+    endpoint = aiplatform.gapic.Endpoint(
+      display_name=f"{test_name}_{uuid4()}"
+    )
+    response = endpoint_client.create_endpoint(
+      parent=parent,
+      endpoint=endpoint
+    )
+    endpoint = response.result()
+    shared_state["endpoint_name"] = endpoint.name
+
+  yield create
