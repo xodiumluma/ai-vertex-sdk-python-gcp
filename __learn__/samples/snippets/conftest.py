@@ -229,3 +229,13 @@ def teardown_features(shared_state, featurestore_client):
 
   for feature_name in shared_state["feature_names"]:
     featurestore_client.delete_feature(name=feature_name)
+
+@pytest.fixture()
+def teardown_batch_read_feature_values(shared_state, bigquery_client):
+  yield
+
+  bigquery_client.delete_dataset(
+    shared_state["destination_data_set"],
+    delete_contents=True,
+    not_found_ok=True
+  )
