@@ -254,6 +254,7 @@ WORKER_COUNT = 1
 
 # Feature online store constants
 FEATURE_ONLINE_STORE_ID = "sample_feature_online_store"
+PROJECT_ALLOWLISTED = ["test-project"]
 
 TABULAR_TARGET_COLUMN = "target_column"
 FORECASTNG_TIME_COLUMN = "date"
@@ -350,6 +351,26 @@ VECTOR_SERACH_INDEX_DATAPOINTS = [
 VECTOR_SEARCH_INDEX_ENDPOINT = "456"
 VECTOR_SEARCH_DEPLOYED_INDEX_ID = "789"
 VECTOR_SERACH_INDEX_QUERIES = [[0.1]]
+VECTOR_SERACH_INDEX_HYBRID_QUERIES = [
+    aiplatform.matching_engine.matching_engine_index_endpoint.HybridQuery(
+        dense_embedding=[1, 2, 3],
+        sparse_embedding_dimensions=[10, 20, 30],
+        sparse_embedding_values=[1.0, 1.0, 1.0],
+        rrf_ranking_alpha=0.5,
+    ),
+    aiplatform.matching_engine.matching_engine_index_endpoint.HybridQuery(
+        dense_embedding=[1, 2, 3],
+        sparse_embedding_dimensions=[10, 20, 30],
+        sparse_embedding_values=[0.1, 0.2, 0.3],
+    ),
+    aiplatform.matching_engine.matching_engine_index_endpoint.HybridQuery(
+        sparse_embedding_dimensions=[10, 20, 30],
+        sparse_embedding_values=[0.1, 0.2, 0.3],
+    ),
+    aiplatform.matching_engine.matching_engine_index_endpoint.HybridQuery(
+        dense_embedding=[1, 2, 3]
+    ),
+]
 VECTOR_SEARCH_INDEX_DISPLAY_NAME = "my-vector-search-index"
 VECTOR_SEARCH_GCS_URI = "gs://fake-dir"
 VECTOR_SEARCH_INDEX_ENDPOINT_DISPLAY_NAME = "my-vector-search-index-endpoint"
