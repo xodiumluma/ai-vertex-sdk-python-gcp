@@ -255,3 +255,15 @@ def create_endpoint(shared_state, endpoint_client):
     shared_state["endpoint_name"] = endpoint.name
 
   yield create
+
+@pytest.fixture()
+def teardown_endpoint(shared_state, endpoint_client):
+  yield
+
+  undeploy_model_operation = endpoint_client.undeploy_model(
+    deployed_model_id=shared_state["deployed_model_id"],
+    endpoint=shared_state["endpoint_name"],
+  )
+  undeploy_model_operation.result()
+
+  endpoint_client.delete_endpoint(name=shared_state["endpoint_name"])
