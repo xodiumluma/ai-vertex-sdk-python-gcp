@@ -205,3 +205,20 @@ def teardown_featurestore(shared_state, client):
   }
   
   client.delete_featurestore(request=force_delete_featurestore_request)
+
+@pytest.fixture()
+def teardown_entity_type(shared_state, featurestore_client):
+  yield
+
+  # force deletion
+  force_delete_entity_type_request = {
+    "name": shared_state["entity_type_name"],
+    "force": True
+  }
+  featurestore_client.delete_entity_type(request=force_delete_entity_type_request)
+
+@pytest.fixture()
+def teardown_feature(shared_state, client):
+  yield
+  
+  client.delete_feature(name=shared_state["feature_name"])
