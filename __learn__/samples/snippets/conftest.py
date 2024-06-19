@@ -267,3 +267,9 @@ def teardown_endpoint(shared_state, endpoint_client):
   undeploy_model_operation.result()
 
   endpoint_client.delete_endpoint(name=shared_state["endpoint_name"])
+
+@pytest.fixture()
+def teardown_model(shared_state, model_client):
+  yield
+
+  model_client.delete_model(name=shared_state["model_name"])
