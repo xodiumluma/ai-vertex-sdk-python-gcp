@@ -48,3 +48,21 @@ def wait_for_job_state(
     "\nMaybe it's a good idea to increase the sample test timeout"
     f"\nLast recorded state: {response.state}"
   )
+
+def flaky_test_diagnostic(file_name, test_name, N=20):
+
+  import pytest_lazyfixture
+
+  timing_dict = collections.defaultdict(list)
+  for ri in range(N):
+    start = timer()
+    result = pytest.main(["-s", f"{file_name}::{test_name}"])
+    end = timer()
+    delta = end - start
+    if result == pytest.ExitCode.OK:
+      timing_dict["SUCCESS"].append(delta)
+    else:
+      timing_dict["FAILURE"].append(delta)
+
+  return timing_dit
+  
