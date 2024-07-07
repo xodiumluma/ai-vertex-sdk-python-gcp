@@ -15,7 +15,7 @@
 #
 # Generated code. DO NOT EDIT!
 #
-# Snippet for ComputeTokens
+# Snippet for UpdateDeploymentResourcePool
 # NOTE: This snippet has been automatically generated for illustrative purposes only.
 # It may require modifications to work in your environment.
 
@@ -23,7 +23,7 @@
 #   python3 -m pip install google-cloud-aiplatform
 
 
-# [START aiplatform_v1beta1_generated_LlmUtilityService_ComputeTokens_sync]
+# [START aiplatform_v1_generated_DeploymentResourcePoolService_UpdateDeploymentResourcePool_sync]
 # This snippet has been automatically generated and should be regarded as a
 # code template only.
 # It will require modifications to work:
@@ -31,22 +31,29 @@
 # - It may require specifying regional endpoints when creating the service
 #   client as shown in:
 #   https://googleapis.dev/python/google-api-core/latest/client_options.html
-from google.cloud import aiplatform_v1beta1
+from google.cloud import aiplatform_v1
 
 
-def sample_compute_tokens():
+def sample_update_deployment_resource_pool():
     # Create a client
-    client = aiplatform_v1beta1.LlmUtilityServiceClient()
+    client = aiplatform_v1.DeploymentResourcePoolServiceClient()
 
     # Initialize request argument(s)
-    request = aiplatform_v1beta1.ComputeTokensRequest(
-        endpoint="endpoint_value",
+    deployment_resource_pool = aiplatform_v1.DeploymentResourcePool()
+    deployment_resource_pool.dedicated_resources.min_replica_count = 1803
+
+    request = aiplatform_v1.UpdateDeploymentResourcePoolRequest(
+        deployment_resource_pool=deployment_resource_pool,
     )
 
     # Make the request
-    response = client.compute_tokens(request=request)
+    operation = client.update_deployment_resource_pool(request=request)
+
+    print("Waiting for operation to complete...")
+
+    response = operation.result()
 
     # Handle the response
     print(response)
 
-# [END aiplatform_v1beta1_generated_LlmUtilityService_ComputeTokens_sync]
+# [END aiplatform_v1_generated_DeploymentResourcePoolService_UpdateDeploymentResourcePool_sync]
