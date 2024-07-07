@@ -24,3 +24,15 @@ LINT_PATHS = [
 DEFAULT_PYTHON_VERSION = "3.8"
 
 UNIT_TEST_PYTHON_VERSIONS = ["3.8", "3.9", "3.10", "3.11", "3.12"]
+UNIT_TEST_STANDARD_DEPENDENCIES = [
+  "mock",
+  "asyncmock",
+  "pytest",
+  "pytest-cov",
+  "pytest-asyncio",
+]
+UNIT_TEST_EXTERNAL_DEPENDENCIES = []
+UNIT_TEST_LOCAL_DEPENDENCIES = []
+UNIT_TEST_DEPENDENCIES = []
+UNIT_TEST_EXTRAS = ["testing",]
+UNIT_TEST_EXTRAS_BY_PYTHON = {}
