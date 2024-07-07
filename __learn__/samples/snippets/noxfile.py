@@ -69,3 +69,13 @@ nox.options.error_on_missing_interpreters = True
 #   E266: too many leading hashes for block comments
 #   E501: line's too long
 #   I202: extra newline in imports section
+# Also mention default rules that are ignored:
+# ['E226', 'W504', 'E126', 'E123', 'W503', 'E24', 'E704', 'E121']
+FLAKE8_COMMON_ARGS = [
+  "--show-source",
+  "--builtin=gettext",
+  "--max-complexity=20",
+  "--exclude=.nox,.cache,env,lib,generated_pb2,*_pb2.py,*_pb2_grpc.py",
+  "--ignore=E121,E123,E126,E203,E226,E24,E266,E501,E704,W503,W504,I202",
+  "--max-line-length=88",
+]
