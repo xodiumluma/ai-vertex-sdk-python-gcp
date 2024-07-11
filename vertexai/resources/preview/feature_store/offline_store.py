@@ -19,11 +19,12 @@ import datetime
 import re
 
 from typing import Optional, List, Tuple, Union, TYPE_CHECKING
+from google.auth import credentials as auth_credentials
 from vertexai.resources.preview.feature_store import (
     FeatureGroup,
     Feature,
 )
-from google.cloud.aiplatform import initializer
+from google.cloud.aiplatform import initializer, __version__
 
 from . import _offline_store_impl as impl
 
@@ -53,10 +54,12 @@ def _try_import_bigframes():
         ) from exc
 
 
-def _get_feature_group_from_feature(feature: Feature):
+def _get_feature_group_from_feature(
+    feature: Feature, credentials: auth_credentials.Credentials
+):
     """Given a feature, return the feature group resource."""
     result = re.fullmatch(
-        r"projects/.+/locations/.+/featureGroups/(?P<feature_group>.+)/features/.+",
+        r"projects/(?P<project>.+)/locations/(?P<location>.+)/featureGroups/(?P<feature_group>.+)/features/.+",
         feature.resource_name,
     )
 
@@ -64,12 +67,17 @@ def _get_feature_group_from_feature(feature: Feature):
         raise ValueError("Couldn't find feature group in feature.")
 
     project = feature.project
+    location = feature.location
     feature_group = result.group("feature_group")
 
-    return FeatureGroup(feature_group, project=project)
+    return FeatureGroup(
+        feature_group, project=project, location=location, credentials=credentials
+    )
 
 
-def _extract_feature_from_str_repr(str_feature: str) -> Tuple[FeatureGroup, Feature]:
+def _extract_feature_from_str_repr(
+    str_feature: str, credentials: auth_credentials.Credentials
+) -> Tuple[FeatureGroup, Feature]:
     """Given a feature in string representation, return the feature and feature group."""
     # TODO: compile expr + place it in a constant
     result = re.fullmatch(
@@ -81,14 +89,12 @@ def _extract_feature_from_str_repr(str_feature: str) -> Tuple[FeatureGroup, Feat
             f"Feature '{str_feature}' is a string but not in expected format 'feature_group.feature' or 'project.feature_group.feature'."
         )
 
-    if result.group("project"):
-        feature_group = FeatureGroup(
-            result.group("feature_group"), project=result.group("project")
-        )
-        feature = feature_group.get_feature(result.group("feature"))
-    else:
-        feature_group = FeatureGroup(result.group("feature_group"))
-        feature = feature_group.get_feature(result.group("feature"))
+    feature_group = FeatureGroup(
+        result.group("feature_group"),
+        project=result.group("project"),  # None if no match.
+        credentials=credentials,
+    )
+    feature = feature_group.get_feature(result.group("feature"))
 
     return (feature_group, feature)
 
@@ -149,9 +155,9 @@ def fetch_historical_feature_values(
     # TODO: Add support for feature_age_threshold
     feature_age_threshold: Optional[datetime.timedelta] = None,
     dry_run: bool = False,
-    session: "Optional[bigframes.session.Session]" = None,
     project: Optional[str] = None,
     location: Optional[str] = None,
+    credentials: Optional[auth_credentials.Credentials] = None,
 ) -> "Union[bigframes.pandas.DataFrame, None]":
     """Fetch historical data at the timestamp specified for each entity.
 
@@ -180,19 +186,18 @@ def fetch_historical_feature_values(
       dry_run:
         Build the Point-In-Time Lookup (PITL) query but don't run it. The PITL
         query will be printed to stdout.
-      session:
-        The bigframes session to use for converting `pd.DataFrame` to
-        `bigframes.pandas.DataFrame` (if necessary) and running the
-        Point-In-Time Lookup (PITL) query in Bigframes/BigQuery. If unset, a new
-        session will be created based on `project` and `location`.
       project:
         The project to use for feature lookup and running the Point-In-Time
         Lookup (PITL) query in BigQuery. If unset, the project set in
-        aiplatform.init will be used. Unused if `session` is provided.
+        aiplatform.init will be used.
       location:
         The location to use for feature lookup and running the Point-In-Time
         Lookup (PITL) query in BigQuery. If unset, the project set in
-        aiplatform.init will be used. Unused if `session` is provided.
+        aiplatform.init will be used.
+      credentials:
+        Custom credentials to use for feature lookup and running the
+        Point-In-Time Lookup (PITL) query in BigQuery. Overrides credentials
+        set in aiplatform.init.
 
     Returns:
       A `bigframes.pandas.DataFrame` with the historical feature values. `None`
@@ -202,9 +207,17 @@ def fetch_historical_feature_values(
     bigframes = _try_import_bigframes()
     project = project or initializer.global_config.project
     location = location or initializer.global_config.location
-    if session is None:
-        session_options = bigframes.BigQueryOptions(project=project, location=location)
-        session = bigframes.connect(session_options)
+    credentials = credentials or initializer.global_config.credentials
+    application_name = (
+        f"vertexai-offline-store/{__version__}+fetch-historical-feature-values"
+    )
+    session_options = bigframes.BigQueryOptions(
+        credentials=credentials,
+        project=project,
+        location=location,
+        application_name=application_name,
+    )
+    session = bigframes.connect(session_options)
 
     if feature_age_threshold is not None:
         raise NotImplementedError("feature_age_threshold is not yet supported.")
@@ -244,10 +257,12 @@ def fetch_historical_feature_values(
     feature_data: List[impl.DataSource] = []
     for feature in features:
         if isinstance(feature, Feature):
-            feature_group = _get_feature_group_from_feature(feature)
+            feature_group = _get_feature_group_from_feature(feature, credentials)
             feature_data.append(_feature_to_data_source(feature_group, feature))
         elif isinstance(feature, str):
-            feature_group, feature = _extract_feature_from_str_repr(feature)
+            feature_group, feature = _extract_feature_from_str_repr(
+                feature, credentials
+            )
             feature_data.append(_feature_to_data_source(feature_group, feature))
         else:
             raise ValueError(
