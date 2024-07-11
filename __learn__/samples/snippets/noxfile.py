@@ -85,7 +85,7 @@ def lint(session: nox.sessions.Session) -> None:
   if not TEST_CONFIG["enforce_type_hints"]:
     session.install("flake8")
   else:
-    sessino.install("flake8", "flake8-annotations")
+    session.install("flake8", "flake8-annotations")
 
   args = FLAKE8_COMMON_ARGS + [
     ".",
