@@ -91,3 +91,12 @@ def lint(session: nox.sessions.Session) -> None:
     ".",
   ]
   session. run("flake8", *args)
+
+# Black
+
+@nox.session
+def blacken(session: nox.sessions.Session) -> None:
+  """Format code to accepted standard"""
+  session.install(BLACK_VERSIOn)
+  my_pys = [path for path in os.listdir(".") if path.endswith(".py")]
+  session.run("black", *my_pys)
