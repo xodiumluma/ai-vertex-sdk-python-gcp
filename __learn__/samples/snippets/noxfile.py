@@ -79,3 +79,15 @@ FLAKE8_COMMON_ARGS = [
   "--ignore=E121,E123,E126,E203,E226,E24,E266,E501,E704,W503,W504,I202",
   "--max-line-length=88",
 ]
+
+@nox.session
+def lint(session: nox.sessions.Session) -> None:
+  if not TEST_CONFIG["enforce_type_hints"]:
+    session.install("flake8")
+  else:
+    sessino.install("flake8", "flake8-annotations")
+
+  args = FLAKE8_COMMON_ARGS + [
+    ".",
+  ]
+  session. run("flake8", *args)
