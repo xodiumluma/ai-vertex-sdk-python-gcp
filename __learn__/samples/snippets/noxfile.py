@@ -183,3 +183,23 @@ def py(session: nox.sessions.Session) -> None:
     session.skip(
       "{} tests are disabled for this sample - SKIPPED".format(session.python)
     )
+
+# generate READMEs
+
+def _get_repo_root() -> Optional[str]:
+  """Obtain root folder of project"""
+  # Prevent directory recursion past 10 levels deep
+  p = Path(os.getcwd())
+  for i in range(10):
+    if p is None:
+      break
+    if Path(p / ".git").exists():
+      return str(p)
+    # the .git folder is unavailable in repos that Cloud Build cloned
+    # But setup.py is always available
+    # https://github.com/googleapis/synthtool/issues/792
+    if Path(p / "setup.py").exists():
+      return str(p)
+    p = p.parent
+  raise Exception("Couldn't detect repo root")
+
