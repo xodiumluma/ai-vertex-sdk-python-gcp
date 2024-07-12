@@ -135,8 +135,8 @@ def _session_tests(
     session.install(f"pip=={pip_version}")
   """For a specific project - run py.test"""
   concurrent_args = []
-  if os.path.exists("requirements.txt")
-    if os.path.exists("constraints.txt")
+  if os.path.exists("requirements.txt"):
+    if os.path.exists("constraints.txt"):
       session.install("-r", "requirements.txt", "-c", "constraints.txt")
     else:
       session.install("-r", "requirements.txt")
@@ -166,9 +166,9 @@ def _session_tests(
 
   session.run(
     "pytest",
-    *(PYTEST_COMMON_ARGS" + session.posargs + concurrent_args),
-    # if no tests are collected Pytest will return 5
-    # on travis slow/flakey tests are left out
+    *(PYTEST_COMMON_ARGS + session.posargs + concurrent_args),
+    # When no tests are collected Pytest will return 5
+    # This can occur on travis where slow/flaky tests are omitted
     # https://doc.pytest.org/en/latest/_modules/_pytest/main.html
     success_codes=[0, 5],
     env=get_pytest_env_vars(),
