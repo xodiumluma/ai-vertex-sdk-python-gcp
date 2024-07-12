@@ -173,3 +173,13 @@ def _session_tests(
     success_codes=[0, 5],
     env=get_pytest_env_vars(),
   )
+
+@nox.session(python=ALL_VERSIONS)
+def py(session: nox.sessions.Session) -> None:
+  """Using the indicated version of Python run py.test for a sample"""
+  if session.python in TESTED_VERSIONS:
+    _session_tests(session)
+  else:
+    session.skip(
+      "{} tests are disabled for this sample - SKIPPED".format(session.python)
+    )
