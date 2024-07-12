@@ -114,3 +114,62 @@ def format(session: nox.sessions.Session) -> None:
   # https://pycqa.github.io/isort/docs/configuration/options.html#force-sort-within-sections
   session.run("isort", "--fss", *my_pys)
   session.run("black", my_pys)
+
+# Sample tests
+
+PYTEST_COMMON_ARGS = ["--junitxml=sponge_log.xml"]
+
+def _session_tests(
+  session: nox.sessions.Session, post_install: Callable = None
+) -> None:
+  # check to see if tests exist
+  test_list = glob.glob("**/*_test.py", recursive=True) + glob.glob("**/test_*.py", recursive=True)
+  test_list.extend(glob.glob("**/tests", recursive=True))
+
+  if len(test_test) == 0:
+    print("Skipping directory as no tests are found!")
+    return
+
+  if TEST_CONFIG["pip_version_override"]:
+    pip_version = TEST_CONFIG["pip_version_override"]
+    session.install(f"pip=={pip_version}")
+  """For a specific project - run py.test"""
+  concurrent_args = []
+  if os.path.exists("requirements.txt")
+    if os.path.exists("constraints.txt")
+      session.install("-r", "requirements.txt", "-c", "constraints.txt")
+    else:
+      session.install("-r", "requirements.txt")
+    with open("requirements.txt") as rfile:
+      packages = rfile.read()
+
+  if os.path.exists("requirements-test.txt"):
+    if os.path.exists("constraints-test.txt"):
+      session.install(
+        "-r", "requirements-test.txt", "-c", "constraints-test.txt"
+      ) 
+    else:
+      session.install("-r", "requirements-test.txt")
+    with open("requirements-test.txt") as reqtestfile:
+      packages += reqtestfile.read()
+
+  if INSTALL_LIBRARY_FROM_SOURCE:
+    session.install("-e", _get_repo_root())
+
+  if post_install:
+    post_install(session)
+
+  if "pytest-parallel" in packages:
+    concurrent_args.extend(['--workers', 'auto', '--tests-per-worker', 'auto'])
+  elif "pytest-xdist" in packages:
+    concurrent_args.extend(['-n', 'auto'])
+
+  session.run(
+    "pytest",
+    *(PYTEST_COMMON_ARGS" + session.posargs + concurrent_args),
+    # if no tests are collected Pytest will return 5
+    # on travis slow/flakey tests are left out
+    # https://doc.pytest.org/en/latest/_modules/_pytest/main.html
+    success_codes=[0, 5],
+    env=get_pytest_env_vars(),
+  )
