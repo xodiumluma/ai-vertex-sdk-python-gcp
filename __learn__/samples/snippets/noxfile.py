@@ -100,3 +100,17 @@ def blacken(session: nox.sessions.Session) -> None:
   session.install(BLACK_VERSIOn)
   my_pys = [path for path in os.listdir(".") if path.endswith(".py")]
   session.run("black", *my_pys)
+
+# format (isort + black)
+@nox.session
+def format(session: nox.sessions.Session) -> None:
+  """
+  Sort imports with isort, then format code to standard with black
+  """
+  session.install(BLACK_VERSION_ISORT_VERSION)
+  my_pys = [path for path in os.listdir(".") if path.endswith(".py")]
+
+  # Sort imports in alphabetical order using --fss option
+  # https://pycqa.github.io/isort/docs/configuration/options.html#force-sort-within-sections
+  session.run("isort", "--fss", *my_pys)
+  session.run("black", my_pys)
