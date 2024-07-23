@@ -64,5 +64,5 @@ def flaky_test_diagnostic(file_name, test_name, N=20):
     else:
       timing_dict["FAILURE"].append(delta)
 
-  return timing_dit
+  return timing_dict
   
