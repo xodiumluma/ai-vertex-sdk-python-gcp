@@ -22,3 +22,4 @@ def test_ucaip_generated_create_dataset_image(capsys, shared_state):
   assert "create_dataset_response" in out
 
   shared_state["dataset_name"] = helpers.get_name(out)
+  
