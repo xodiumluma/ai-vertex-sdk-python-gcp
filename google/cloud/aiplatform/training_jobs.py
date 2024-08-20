@@ -17,7 +17,7 @@
 
 import datetime
 import time
-from typing import Dict, List, Optional, Sequence, Tuple, Union
+from typing import Dict, List, Literal, Optional, Sequence, Tuple, Union
 from google.protobuf import json_format
 
 import abc
@@ -44,6 +44,7 @@ from google.cloud.aiplatform.compat.types import (
 from google.cloud.aiplatform.compat.types import (
     training_pipeline as gca_training_pipeline,
     study as gca_study_compat,
+    custom_job as gca_custom_job_compat,
 )
 
 from google.cloud.aiplatform.utils import _timestamped_gcs_dir
@@ -1403,6 +1404,11 @@ class _CustomTrainingJob(_TrainingJob):
         reduction_server_replica_count: int = 0,
         reduction_server_machine_type: Optional[str] = None,
         tpu_topology: Optional[str] = None,
+        reservation_affinity_type: Optional[
+            Literal["NO_RESERVATION", "ANY_RESERVATION", "SPECIFIC_RESERVATION"]
+        ] = None,
+        reservation_affinity_key: Optional[str] = None,
+        reservation_affinity_values: Optional[List[str]] = None,
     ) -> Tuple[worker_spec_utils._DistributedTrainingSpec, Optional[gca_model.Model]]:
         """Create worker pool specs and managed model as well validating the
         run.
@@ -1450,6 +1456,23 @@ class _CustomTrainingJob(_TrainingJob):
             tpu_topology (str):
                 Optional. Only required if the machine type is a TPU
                 v5 version.
+            reservation_affinity_type (str):
+                Optional. The type of reservation affinity. One of:
+                * "NO_RESERVATION" : No reservation is used.
+                * "ANY_RESERVATION" : Any reservation that matches machine spec
+                can be used.
+                * "SPECIFIC_RESERVATION" : A specific reservation must be use
+                used. See reservation_affinity_key and
+                reservation_affinity_values for how to specify the reservation.
+            reservation_affinity_key (str):
+                Optional. Corresponds to the label key of a reservation resource.
+                To target a SPECIFIC_RESERVATION by name, use
+                `compute.googleapis.com/reservation-name` as the key
+                and specify the name of your reservation as its value.
+            reservation_affinity_values (List[str]):
+                Optional. Corresponds to the label values of a reservation resource.
+                This must be the full resource name of the reservation.
+                Format: 'projects/{project_id_or_number}/zones/{zone}/reservations/{reservation_name}'
 
         Returns:
             Worker pools specs and managed model for run.
@@ -1489,6 +1512,9 @@ class _CustomTrainingJob(_TrainingJob):
                 reduction_server_replica_count=reduction_server_replica_count,
                 reduction_server_machine_type=reduction_server_machine_type,
                 tpu_topology=tpu_topology,
+                reservation_affinity_type=reservation_affinity_type,
+                reservation_affinity_key=reservation_affinity_key,
+                reservation_affinity_values=reservation_affinity_values,
             ).pool_specs
         )
 
@@ -1525,6 +1551,7 @@ class _CustomTrainingJob(_TrainingJob):
         tensorboard: Optional[str] = None,
         disable_retries: bool = False,
         persistent_resource_id: Optional[str] = None,
+        scheduling_strategy: Optional[gca_custom_job_compat.Scheduling.Strategy] = None,
     ) -> Tuple[Dict, str]:
         """Prepares training task inputs and output directory for custom job.
 
@@ -1582,6 +1609,8 @@ class _CustomTrainingJob(_TrainingJob):
                 on-demand short-live machines. The network, CMEK, and node pool
                 configs on the job should be consistent with those on the
                 PersistentResource, otherwise, the job will be rejected.
+            scheduling_strategy (gca_custom_job_compat.Scheduling.Strategy):
+                Optional. Indicates the job scheduling strategy.
 
         Returns:
             Training task inputs and Output directory for custom job.
@@ -1612,12 +1641,18 @@ class _CustomTrainingJob(_TrainingJob):
         if persistent_resource_id:
             training_task_inputs["persistent_resource_id"] = persistent_resource_id
 
-        if timeout or restart_job_on_worker_restart or disable_retries:
+        if (
+            timeout
+            or restart_job_on_worker_restart
+            or disable_retries
+            or scheduling_strategy
+        ):
             timeout = f"{timeout}s" if timeout else None
             scheduling = {
                 "timeout": timeout,
                 "restart_job_on_worker_restart": restart_job_on_worker_restart,
                 "disable_retries": disable_retries,
+                "strategy": scheduling_strategy,
             }
             training_task_inputs["scheduling"] = scheduling
 
@@ -3005,6 +3040,12 @@ class CustomTrainingJob(_CustomTrainingJob):
         disable_retries: bool = False,
         persistent_resource_id: Optional[str] = None,
         tpu_topology: Optional[str] = None,
+        scheduling_strategy: Optional[gca_custom_job_compat.Scheduling.Strategy] = None,
+        reservation_affinity_type: Optional[
+            Literal["NO_RESERVATION", "ANY_RESERVATION", "SPECIFIC_RESERVATION"]
+        ] = None,
+        reservation_affinity_key: Optional[str] = None,
+        reservation_affinity_values: Optional[List[str]] = None,
     ) -> Optional[models.Model]:
         """Runs the custom training job.
 
@@ -3360,6 +3401,25 @@ class CustomTrainingJob(_CustomTrainingJob):
                 details on the TPU topology, refer to
                 https://cloud.google.com/tpu/docs/v5e#tpu-v5e-config. The topology must
                 be a supported value for the TPU machine type.
+            scheduling_strategy (gca_custom_job_compat.Scheduling.Strategy):
+                Optional. Indicates the job scheduling strategy.
+            reservation_affinity_type (str):
+                Optional. The type of reservation affinity. One of:
+                * "NO_RESERVATION" : No reservation is used.
+                * "ANY_RESERVATION" : Any reservation that matches machine spec
+                can be used.
+                * "SPECIFIC_RESERVATION" : A specific reservation must be use
+                used. See reservation_affinity_key and
+                reservation_affinity_values for how to specify the reservation.
+            reservation_affinity_key (str):
+                Optional. Corresponds to the label key of a reservation resource.
+                To target a SPECIFIC_RESERVATION by name, use
+                `compute.googleapis.com/reservation-name` as the key
+                and specify the name of your reservation as its value.
+            reservation_affinity_values (List[str]):
+                Optional. Corresponds to the label values of a reservation resource.
+                This must be the full resource name of the reservation.
+                Format: 'projects/{project_id_or_number}/zones/{zone}/reservations/{reservation_name}'
 
         Returns:
             The trained Vertex AI model resource or None if the training
@@ -3380,6 +3440,9 @@ class CustomTrainingJob(_CustomTrainingJob):
             reduction_server_replica_count=reduction_server_replica_count,
             reduction_server_machine_type=reduction_server_machine_type,
             tpu_topology=tpu_topology,
+            reservation_affinity_type=reservation_affinity_type,
+            reservation_affinity_key=reservation_affinity_key,
+            reservation_affinity_values=reservation_affinity_values,
         )
 
         # make and copy package
@@ -3417,13 +3480,16 @@ class CustomTrainingJob(_CustomTrainingJob):
             enable_web_access=enable_web_access,
             enable_dashboard_access=enable_dashboard_access,
             tensorboard=tensorboard,
-            reduction_server_container_uri=reduction_server_container_uri
-            if reduction_server_replica_count > 0
-            else None,
+            reduction_server_container_uri=(
+                reduction_server_container_uri
+                if reduction_server_replica_count > 0
+                else None
+            ),
             sync=sync,
             create_request_timeout=create_request_timeout,
             disable_retries=disable_retries,
             persistent_resource_id=persistent_resource_id,
+            scheduling_strategy=scheduling_strategy,
         )
 
     def submit(
@@ -3477,6 +3543,12 @@ class CustomTrainingJob(_CustomTrainingJob):
         disable_retries: bool = False,
         persistent_resource_id: Optional[str] = None,
         tpu_topology: Optional[str] = None,
+        scheduling_strategy: Optional[gca_custom_job_compat.Scheduling.Strategy] = None,
+        reservation_affinity_type: Optional[
+            Literal["NO_RESERVATION", "ANY_RESERVATION", "SPECIFIC_RESERVATION"]
+        ] = None,
+        reservation_affinity_key: Optional[str] = None,
+        reservation_affinity_values: Optional[List[str]] = None,
     ) -> Optional[models.Model]:
         """Submits the custom training job without blocking until completion.
 
@@ -3777,6 +3849,25 @@ class CustomTrainingJob(_CustomTrainingJob):
                 details on the TPU topology, refer to
                 https://cloud.google.com/tpu/docs/v5e#tpu-v5e-config. The topology must
                 be a supported value for the TPU machine type.
+            scheduling_strategy (gca_custom_job_compat.Scheduling.Strategy):
+                Optional. Indicates the job scheduling strategy.
+            reservation_affinity_type (str):
+                Optional. The type of reservation affinity. One of:
+                * "NO_RESERVATION" : No reservation is used.
+                * "ANY_RESERVATION" : Any reservation that matches machine spec
+                can be used.
+                * "SPECIFIC_RESERVATION" : A specific reservation must be use
+                used. See reservation_affinity_key and
+                reservation_affinity_values for how to specify the reservation.
+            reservation_affinity_key (str):
+                Optional. Corresponds to the label key of a reservation resource.
+                To target a SPECIFIC_RESERVATION by name, use
+                `compute.googleapis.com/reservation-name` as the key
+                and specify the name of your reservation as its value.
+            reservation_affinity_values (List[str]):
+                Optional. Corresponds to the label values of a reservation resource.
+                This must be the full resource name of the reservation.
+                Format: 'projects/{project_id_or_number}/zones/{zone}/reservations/{reservation_name}'
 
         Returns:
             model: The trained Vertex AI Model resource or None if training did not
@@ -3796,6 +3887,9 @@ class CustomTrainingJob(_CustomTrainingJob):
             reduction_server_replica_count=reduction_server_replica_count,
             reduction_server_machine_type=reduction_server_machine_type,
             tpu_topology=tpu_topology,
+            reservation_affinity_type=reservation_affinity_type,
+            reservation_affinity_key=reservation_affinity_key,
+            reservation_affinity_values=reservation_affinity_values,
         )
 
         # make and copy package
@@ -3833,14 +3927,17 @@ class CustomTrainingJob(_CustomTrainingJob):
             enable_web_access=enable_web_access,
             enable_dashboard_access=enable_dashboard_access,
             tensorboard=tensorboard,
-            reduction_server_container_uri=reduction_server_container_uri
-            if reduction_server_replica_count > 0
-            else None,
+            reduction_server_container_uri=(
+                reduction_server_container_uri
+                if reduction_server_replica_count > 0
+                else None
+            ),
             sync=sync,
             create_request_timeout=create_request_timeout,
             block=False,
             disable_retries=disable_retries,
             persistent_resource_id=persistent_resource_id,
+            scheduling_strategy=scheduling_strategy,
         )
 
     @base.optional_sync(construct_object_on_arg="managed_model")
@@ -3888,6 +3985,7 @@ class CustomTrainingJob(_CustomTrainingJob):
         block: Optional[bool] = True,
         disable_retries: bool = False,
         persistent_resource_id: Optional[str] = None,
+        scheduling_strategy: Optional[gca_custom_job_compat.Scheduling.Strategy] = None,
     ) -> Optional[models.Model]:
         """Packages local script and launches training_job.
 
@@ -4084,6 +4182,8 @@ class CustomTrainingJob(_CustomTrainingJob):
                 on-demand short-live machines. The network, CMEK, and node pool
                 configs on the job should be consistent with those on the
                 PersistentResource, otherwise, the job will be rejected.
+            scheduling_strategy (gca_custom_job_compat.Scheduling.Strategy):
+                Optional. Indicates the job scheduling strategy.
 
         Returns:
             model: The trained Vertex AI Model resource or None if training did not
@@ -4138,6 +4238,7 @@ class CustomTrainingJob(_CustomTrainingJob):
             tensorboard=tensorboard,
             disable_retries=disable_retries,
             persistent_resource_id=persistent_resource_id,
+            scheduling_strategy=scheduling_strategy,
         )
 
         model = self._run_job(
@@ -4462,6 +4563,12 @@ class CustomContainerTrainingJob(_CustomTrainingJob):
         disable_retries: bool = False,
         persistent_resource_id: Optional[str] = None,
         tpu_topology: Optional[str] = None,
+        scheduling_strategy: Optional[gca_custom_job_compat.Scheduling.Strategy] = None,
+        reservation_affinity_type: Optional[
+            Literal["NO_RESERVATION", "ANY_RESERVATION", "SPECIFIC_RESERVATION"]
+        ] = None,
+        reservation_affinity_key: Optional[str] = None,
+        reservation_affinity_values: Optional[List[str]] = None,
     ) -> Optional[models.Model]:
         """Runs the custom training job.
 
@@ -4755,6 +4862,25 @@ class CustomContainerTrainingJob(_CustomTrainingJob):
                 details on the TPU topology, refer to
                 https://cloud.google.com/tpu/docs/v5e#tpu-v5e-config. The topology
                 must be a supported value for the TPU machine type.
+            scheduling_strategy (gca_custom_job_compat.Scheduling.Strategy):
+                Optional. Indicates the job scheduling strategy.
+            reservation_affinity_type (str):
+                Optional. The type of reservation affinity. One of:
+                * "NO_RESERVATION" : No reservation is used.
+                * "ANY_RESERVATION" : Any reservation that matches machine spec
+                can be used.
+                * "SPECIFIC_RESERVATION" : A specific reservation must be use
+                used. See reservation_affinity_key and
+                reservation_affinity_values for how to specify the reservation.
+            reservation_affinity_key (str):
+                Optional. Corresponds to the label key of a reservation resource.
+                To target a SPECIFIC_RESERVATION by name, use
+                `compute.googleapis.com/reservation-name` as the key
+                and specify the name of your reservation as its value.
+            reservation_affinity_values (List[str]):
+                Optional. Corresponds to the label values of a reservation resource.
+                This must be the full resource name of the reservation.
+                Format: 'projects/{project_id_or_number}/zones/{zone}/reservations/{reservation_name}'
 
         Returns:
             model: The trained Vertex AI Model resource or None if training did not
@@ -4780,6 +4906,9 @@ class CustomContainerTrainingJob(_CustomTrainingJob):
             reduction_server_replica_count=reduction_server_replica_count,
             reduction_server_machine_type=reduction_server_machine_type,
             tpu_topology=tpu_topology,
+            reservation_affinity_type=reservation_affinity_type,
+            reservation_affinity_key=reservation_affinity_key,
+            reservation_affinity_values=reservation_affinity_values,
         )
 
         return self._run(
@@ -4811,13 +4940,16 @@ class CustomContainerTrainingJob(_CustomTrainingJob):
             enable_web_access=enable_web_access,
             enable_dashboard_access=enable_dashboard_access,
             tensorboard=tensorboard,
-            reduction_server_container_uri=reduction_server_container_uri
-            if reduction_server_replica_count > 0
-            else None,
+            reduction_server_container_uri=(
+                reduction_server_container_uri
+                if reduction_server_replica_count > 0
+                else None
+            ),
             sync=sync,
             create_request_timeout=create_request_timeout,
             disable_retries=disable_retries,
             persistent_resource_id=persistent_resource_id,
+            scheduling_strategy=scheduling_strategy,
         )
 
     def submit(
@@ -4871,6 +5003,12 @@ class CustomContainerTrainingJob(_CustomTrainingJob):
         disable_retries: bool = False,
         persistent_resource_id: Optional[str] = None,
         tpu_topology: Optional[str] = None,
+        scheduling_strategy: Optional[gca_custom_job_compat.Scheduling.Strategy] = None,
+        reservation_affinity_type: Optional[
+            Literal["NO_RESERVATION", "ANY_RESERVATION", "SPECIFIC_RESERVATION"]
+        ] = None,
+        reservation_affinity_key: Optional[str] = None,
+        reservation_affinity_values: Optional[List[str]] = None,
     ) -> Optional[models.Model]:
         """Submits the custom training job without blocking until completion.
 
@@ -5164,6 +5302,25 @@ class CustomContainerTrainingJob(_CustomTrainingJob):
                 details on the TPU topology, refer to
                 https://cloud.google.com/tpu/docs/v5e#tpu-v5e-config. The topology
                 must be a supported value for the TPU machine type.
+            scheduling_strategy (gca_custom_job_compat.Scheduling.Strategy):
+                Optional. Indicates the job scheduling strategy.
+            reservation_affinity_type (str):
+                Optional. The type of reservation affinity. One of:
+                * "NO_RESERVATION" : No reservation is used.
+                * "ANY_RESERVATION" : Any reservation that matches machine spec
+                can be used.
+                * "SPECIFIC_RESERVATION" : A specific reservation must be use
+                used. See reservation_affinity_key and
+                reservation_affinity_values for how to specify the reservation.
+            reservation_affinity_key (str):
+                Optional. Corresponds to the label key of a reservation resource.
+                To target a SPECIFIC_RESERVATION by name, use
+                `compute.googleapis.com/reservation-name` as the key
+                and specify the name of your reservation as its value.
+            reservation_affinity_values (List[str]):
+                Optional. Corresponds to the label values of a reservation resource.
+                This must be the full resource name of the reservation.
+                Format: 'projects/{project_id_or_number}/zones/{zone}/reservations/{reservation_name}'
 
         Returns:
             model: The trained Vertex AI Model resource or None if training did not
@@ -5188,6 +5345,9 @@ class CustomContainerTrainingJob(_CustomTrainingJob):
             reduction_server_replica_count=reduction_server_replica_count,
             reduction_server_machine_type=reduction_server_machine_type,
             tpu_topology=tpu_topology,
+            reservation_affinity_type=reservation_affinity_type,
+            reservation_affinity_key=reservation_affinity_key,
+            reservation_affinity_values=reservation_affinity_values,
         )
 
         return self._run(
@@ -5219,14 +5379,17 @@ class CustomContainerTrainingJob(_CustomTrainingJob):
             enable_web_access=enable_web_access,
             enable_dashboard_access=enable_dashboard_access,
             tensorboard=tensorboard,
-            reduction_server_container_uri=reduction_server_container_uri
-            if reduction_server_replica_count > 0
-            else None,
+            reduction_server_container_uri=(
+                reduction_server_container_uri
+                if reduction_server_replica_count > 0
+                else None
+            ),
             sync=sync,
             create_request_timeout=create_request_timeout,
             block=False,
             disable_retries=disable_retries,
             persistent_resource_id=persistent_resource_id,
+            scheduling_strategy=scheduling_strategy,
         )
 
     @base.optional_sync(construct_object_on_arg="managed_model")
@@ -5273,6 +5436,7 @@ class CustomContainerTrainingJob(_CustomTrainingJob):
         block: Optional[bool] = True,
         disable_retries: bool = False,
         persistent_resource_id: Optional[str] = None,
+        scheduling_strategy: Optional[gca_custom_job_compat.Scheduling.Strategy] = None,
     ) -> Optional[models.Model]:
         """Packages local script and launches training_job.
         Args:
@@ -5465,6 +5629,8 @@ class CustomContainerTrainingJob(_CustomTrainingJob):
                 on-demand short-live machines. The network, CMEK, and node pool
                 configs on the job should be consistent with those on the
                 PersistentResource, otherwise, the job will be rejected.
+            scheduling_strategy (gca_custom_job_compat.Scheduling.Strategy):
+                Optional. Indicates the job scheduling strategy.
 
         Returns:
             model: The trained Vertex AI Model resource or None if training did not
@@ -5513,6 +5679,7 @@ class CustomContainerTrainingJob(_CustomTrainingJob):
             tensorboard=tensorboard,
             disable_retries=disable_retries,
             persistent_resource_id=persistent_resource_id,
+            scheduling_strategy=scheduling_strategy,
         )
 
         model = self._run_job(
@@ -7537,6 +7704,12 @@ class CustomPythonPackageTrainingJob(_CustomTrainingJob):
         disable_retries: bool = False,
         persistent_resource_id: Optional[str] = None,
         tpu_topology: Optional[str] = None,
+        scheduling_strategy: Optional[gca_custom_job_compat.Scheduling.Strategy] = None,
+        reservation_affinity_type: Optional[
+            Literal["NO_RESERVATION", "ANY_RESERVATION", "SPECIFIC_RESERVATION"]
+        ] = None,
+        reservation_affinity_key: Optional[str] = None,
+        reservation_affinity_values: Optional[List[str]] = None,
     ) -> Optional[models.Model]:
         """Runs the custom training job.
 
@@ -7831,6 +8004,25 @@ class CustomPythonPackageTrainingJob(_CustomTrainingJob):
                 details on the TPU topology, refer to
                 https://cloud.google.com/tpu/docs/v5e#tpu-v5e-config. The topology
                 must be a supported value for the TPU machine type.
+            scheduling_strategy (gca_custom_job_compat.Scheduling.Strategy):
+                Optional. Indicates the job scheduling strategy.
+            reservation_affinity_type (str):
+                Optional. The type of reservation affinity. One of:
+                * "NO_RESERVATION" : No reservation is used.
+                * "ANY_RESERVATION" : Any reservation that matches machine spec
+                can be used.
+                * "SPECIFIC_RESERVATION" : A specific reservation must be use
+                used. See reservation_affinity_key and
+                reservation_affinity_values for how to specify the reservation.
+            reservation_affinity_key (str):
+                Optional. Corresponds to the label key of a reservation resource.
+                To target a SPECIFIC_RESERVATION by name, use
+                `compute.googleapis.com/reservation-name` as the key
+                and specify the name of your reservation as its value.
+            reservation_affinity_values (List[str]):
+                Optional. Corresponds to the label values of a reservation resource.
+                This must be the full resource name of the reservation.
+                Format: 'projects/{project_id_or_number}/zones/{zone}/reservations/{reservation_name}'
 
         Returns:
             model: The trained Vertex AI Model resource or None if training did not
@@ -7851,6 +8043,9 @@ class CustomPythonPackageTrainingJob(_CustomTrainingJob):
             reduction_server_replica_count=reduction_server_replica_count,
             reduction_server_machine_type=reduction_server_machine_type,
             tpu_topology=tpu_topology,
+            reservation_affinity_type=reservation_affinity_type,
+            reservation_affinity_key=reservation_affinity_key,
+            reservation_affinity_values=reservation_affinity_values,
         )
 
         return self._run(
@@ -7882,13 +8077,16 @@ class CustomPythonPackageTrainingJob(_CustomTrainingJob):
             enable_web_access=enable_web_access,
             enable_dashboard_access=enable_dashboard_access,
             tensorboard=tensorboard,
-            reduction_server_container_uri=reduction_server_container_uri
-            if reduction_server_replica_count > 0
-            else None,
+            reduction_server_container_uri=(
+                reduction_server_container_uri
+                if reduction_server_replica_count > 0
+                else None
+            ),
             sync=sync,
             create_request_timeout=create_request_timeout,
             disable_retries=disable_retries,
             persistent_resource_id=persistent_resource_id,
+            scheduling_strategy=scheduling_strategy,
         )
 
     @base.optional_sync(construct_object_on_arg="managed_model")
@@ -7934,6 +8132,7 @@ class CustomPythonPackageTrainingJob(_CustomTrainingJob):
         create_request_timeout: Optional[float] = None,
         disable_retries: bool = False,
         persistent_resource_id: Optional[str] = None,
+        scheduling_strategy: Optional[gca_custom_job_compat.Scheduling.Strategy] = None,
     ) -> Optional[models.Model]:
         """Packages local script and launches training_job.
 
@@ -8111,6 +8310,8 @@ class CustomPythonPackageTrainingJob(_CustomTrainingJob):
                 on-demand short-live machines. The network, CMEK, and node pool
                 configs on the job should be consistent with those on the
                 PersistentResource, otherwise, the job will be rejected.
+            scheduling_strategy (gca_custom_job_compat.Scheduling.Strategy):
+                Optional. Indicates the job scheduling strategy.
 
         Returns:
             model: The trained Vertex AI Model resource or None if training did not
@@ -8159,6 +8360,7 @@ class CustomPythonPackageTrainingJob(_CustomTrainingJob):
             tensorboard=tensorboard,
             disable_retries=disable_retries,
             persistent_resource_id=persistent_resource_id,
+            scheduling_strategy=scheduling_strategy,
         )
 
         model = self._run_job(

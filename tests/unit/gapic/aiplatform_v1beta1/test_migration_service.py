@@ -47,6 +47,7 @@ from google.api_core import operation
 from google.api_core import operation_async  # type: ignore
 from google.api_core import operations_v1
 from google.api_core import path_template
+from google.api_core import retry as retries
 from google.auth import credentials as ga_credentials
 from google.auth.exceptions import MutualTLSChannelError
 from google.cloud.aiplatform_v1beta1.services.migration_service import (
@@ -1344,27 +1345,23 @@ async def test_search_migratable_resources_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.search_migratable_resources
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.search_migratable_resources(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.search_migratable_resources(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -1600,12 +1597,18 @@ def test_search_migratable_resources_pager(transport_name: str = "grpc"):
         )
 
         expected_metadata = ()
+        retry = retries.Retry()
+        timeout = 5
         expected_metadata = tuple(expected_metadata) + (
             gapic_v1.routing_header.to_grpc_metadata((("parent", ""),)),
         )
-        pager = client.search_migratable_resources(request={})
+        pager = client.search_migratable_resources(
+            request={}, retry=retry, timeout=timeout
+        )
 
         assert pager._metadata == expected_metadata
+        assert pager._retry == retry
+        assert pager._timeout == timeout
 
         results = list(pager)
         assert len(results) == 6
@@ -1881,8 +1884,9 @@ def test_batch_migrate_resources_use_cached_wrapped_rpc():
         # Establish that the underlying gRPC stub method was called.
         assert mock_rpc.call_count == 1
 
-        # Operation methods build a cached wrapper on first rpc call
-        # subsequent calls should use the cached wrapper
+        # Operation methods call wrapper_fn to build a cached
+        # client._transport.operations_client instance on first rpc call.
+        # Subsequent calls should use the cached wrapper
         wrapper_fn.reset_mock()
 
         client.batch_migrate_resources(request)
@@ -1938,31 +1942,28 @@ async def test_batch_migrate_resources_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.batch_migrate_resources
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.batch_migrate_resources(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
-        # Operation methods build a cached wrapper on first rpc call
-        # subsequent calls should use the cached wrapper
+        # Operation methods call wrapper_fn to build a cached
+        # client._transport.operations_client instance on first rpc call.
+        # Subsequent calls should use the cached wrapper
         wrapper_fn.reset_mock()
 
         await client.batch_migrate_resources(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -2356,7 +2357,7 @@ def test_search_migratable_resources_rest_required_fields(
 
             response = client.search_migratable_resources(request)
 
-            expected_params = []
+            expected_params = [("$alt", "json;enum-encoding=int")]
             actual_params = req.call_args.kwargs["params"]
             assert expected_params == actual_params
 
@@ -2726,7 +2727,7 @@ def test_batch_migrate_resources_rest_required_fields(
 
             response = client.batch_migrate_resources(request)
 
-            expected_params = []
+            expected_params = [("$alt", "json;enum-encoding=int")]
             actual_params = req.call_args.kwargs["params"]
             assert expected_params == actual_params
 

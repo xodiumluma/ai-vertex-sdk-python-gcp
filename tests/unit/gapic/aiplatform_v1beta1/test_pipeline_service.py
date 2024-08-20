@@ -47,6 +47,7 @@ from google.api_core import operation
 from google.api_core import operation_async  # type: ignore
 from google.api_core import operations_v1
 from google.api_core import path_template
+from google.api_core import retry as retries
 from google.auth import credentials as ga_credentials
 from google.auth.exceptions import MutualTLSChannelError
 from google.cloud.aiplatform_v1beta1.services.pipeline_service import (
@@ -1375,27 +1376,23 @@ async def test_create_training_pipeline_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.create_training_pipeline
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.create_training_pipeline(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.create_training_pipeline(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -1803,27 +1800,23 @@ async def test_get_training_pipeline_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.get_training_pipeline
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.get_training_pipeline(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.get_training_pipeline(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -2210,27 +2203,23 @@ async def test_list_training_pipelines_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.list_training_pipelines
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.list_training_pipelines(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.list_training_pipelines(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -2466,12 +2455,16 @@ def test_list_training_pipelines_pager(transport_name: str = "grpc"):
         )
 
         expected_metadata = ()
+        retry = retries.Retry()
+        timeout = 5
         expected_metadata = tuple(expected_metadata) + (
             gapic_v1.routing_header.to_grpc_metadata((("parent", ""),)),
         )
-        pager = client.list_training_pipelines(request={})
+        pager = client.list_training_pipelines(request={}, retry=retry, timeout=timeout)
 
         assert pager._metadata == expected_metadata
+        assert pager._retry == retry
+        assert pager._timeout == timeout
 
         results = list(pager)
         assert len(results) == 6
@@ -2743,8 +2736,9 @@ def test_delete_training_pipeline_use_cached_wrapped_rpc():
         # Establish that the underlying gRPC stub method was called.
         assert mock_rpc.call_count == 1
 
-        # Operation methods build a cached wrapper on first rpc call
-        # subsequent calls should use the cached wrapper
+        # Operation methods call wrapper_fn to build a cached
+        # client._transport.operations_client instance on first rpc call.
+        # Subsequent calls should use the cached wrapper
         wrapper_fn.reset_mock()
 
         client.delete_training_pipeline(request)
@@ -2800,31 +2794,28 @@ async def test_delete_training_pipeline_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.delete_training_pipeline
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.delete_training_pipeline(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
-        # Operation methods build a cached wrapper on first rpc call
-        # subsequent calls should use the cached wrapper
+        # Operation methods call wrapper_fn to build a cached
+        # client._transport.operations_client instance on first rpc call.
+        # Subsequent calls should use the cached wrapper
         wrapper_fn.reset_mock()
 
         await client.delete_training_pipeline(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -3187,27 +3178,23 @@ async def test_cancel_training_pipeline_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.cancel_training_pipeline
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.cancel_training_pipeline(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.cancel_training_pipeline(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -3426,6 +3413,8 @@ def test_create_pipeline_job(request_type, transport: str = "grpc"):
             template_uri="template_uri_value",
             schedule_name="schedule_name_value",
             preflight_validations=True,
+            satisfies_pzs=True,
+            satisfies_pzi=True,
         )
         response = client.create_pipeline_job(request)
 
@@ -3446,6 +3435,8 @@ def test_create_pipeline_job(request_type, transport: str = "grpc"):
     assert response.template_uri == "template_uri_value"
     assert response.schedule_name == "schedule_name_value"
     assert response.preflight_validations is True
+    assert response.satisfies_pzs is True
+    assert response.satisfies_pzi is True
 
 
 def test_create_pipeline_job_empty_call():
@@ -3565,6 +3556,8 @@ async def test_create_pipeline_job_empty_call_async():
                 template_uri="template_uri_value",
                 schedule_name="schedule_name_value",
                 preflight_validations=True,
+                satisfies_pzs=True,
+                satisfies_pzi=True,
             )
         )
         response = await client.create_pipeline_job()
@@ -3596,27 +3589,23 @@ async def test_create_pipeline_job_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.create_pipeline_job
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.create_pipeline_job(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.create_pipeline_job(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -3649,6 +3638,8 @@ async def test_create_pipeline_job_async(
                 template_uri="template_uri_value",
                 schedule_name="schedule_name_value",
                 preflight_validations=True,
+                satisfies_pzs=True,
+                satisfies_pzi=True,
             )
         )
         response = await client.create_pipeline_job(request)
@@ -3670,6 +3661,8 @@ async def test_create_pipeline_job_async(
     assert response.template_uri == "template_uri_value"
     assert response.schedule_name == "schedule_name_value"
     assert response.preflight_validations is True
+    assert response.satisfies_pzs is True
+    assert response.satisfies_pzi is True
 
 
 @pytest.mark.asyncio
@@ -3878,6 +3871,8 @@ def test_get_pipeline_job(request_type, transport: str = "grpc"):
             template_uri="template_uri_value",
             schedule_name="schedule_name_value",
             preflight_validations=True,
+            satisfies_pzs=True,
+            satisfies_pzi=True,
         )
         response = client.get_pipeline_job(request)
 
@@ -3898,6 +3893,8 @@ def test_get_pipeline_job(request_type, transport: str = "grpc"):
     assert response.template_uri == "template_uri_value"
     assert response.schedule_name == "schedule_name_value"
     assert response.preflight_validations is True
+    assert response.satisfies_pzs is True
+    assert response.satisfies_pzi is True
 
 
 def test_get_pipeline_job_empty_call():
@@ -4007,6 +4004,8 @@ async def test_get_pipeline_job_empty_call_async():
                 template_uri="template_uri_value",
                 schedule_name="schedule_name_value",
                 preflight_validations=True,
+                satisfies_pzs=True,
+                satisfies_pzi=True,
             )
         )
         response = await client.get_pipeline_job()
@@ -4038,27 +4037,23 @@ async def test_get_pipeline_job_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.get_pipeline_job
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.get_pipeline_job(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.get_pipeline_job(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -4088,6 +4083,8 @@ async def test_get_pipeline_job_async(
                 template_uri="template_uri_value",
                 schedule_name="schedule_name_value",
                 preflight_validations=True,
+                satisfies_pzs=True,
+                satisfies_pzi=True,
             )
         )
         response = await client.get_pipeline_job(request)
@@ -4109,6 +4106,8 @@ async def test_get_pipeline_job_async(
     assert response.template_uri == "template_uri_value"
     assert response.schedule_name == "schedule_name_value"
     assert response.preflight_validations is True
+    assert response.satisfies_pzs is True
+    assert response.satisfies_pzi is True
 
 
 @pytest.mark.asyncio
@@ -4441,27 +4440,23 @@ async def test_list_pipeline_jobs_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.list_pipeline_jobs
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.list_pipeline_jobs(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.list_pipeline_jobs(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -4697,12 +4692,16 @@ def test_list_pipeline_jobs_pager(transport_name: str = "grpc"):
         )
 
         expected_metadata = ()
+        retry = retries.Retry()
+        timeout = 5
         expected_metadata = tuple(expected_metadata) + (
             gapic_v1.routing_header.to_grpc_metadata((("parent", ""),)),
         )
-        pager = client.list_pipeline_jobs(request={})
+        pager = client.list_pipeline_jobs(request={}, retry=retry, timeout=timeout)
 
         assert pager._metadata == expected_metadata
+        assert pager._retry == retry
+        assert pager._timeout == timeout
 
         results = list(pager)
         assert len(results) == 6
@@ -4973,8 +4972,9 @@ def test_delete_pipeline_job_use_cached_wrapped_rpc():
         # Establish that the underlying gRPC stub method was called.
         assert mock_rpc.call_count == 1
 
-        # Operation methods build a cached wrapper on first rpc call
-        # subsequent calls should use the cached wrapper
+        # Operation methods call wrapper_fn to build a cached
+        # client._transport.operations_client instance on first rpc call.
+        # Subsequent calls should use the cached wrapper
         wrapper_fn.reset_mock()
 
         client.delete_pipeline_job(request)
@@ -5030,31 +5030,28 @@ async def test_delete_pipeline_job_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.delete_pipeline_job
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.delete_pipeline_job(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
-        # Operation methods build a cached wrapper on first rpc call
-        # subsequent calls should use the cached wrapper
+        # Operation methods call wrapper_fn to build a cached
+        # client._transport.operations_client instance on first rpc call.
+        # Subsequent calls should use the cached wrapper
         wrapper_fn.reset_mock()
 
         await client.delete_pipeline_job(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -5366,8 +5363,9 @@ def test_batch_delete_pipeline_jobs_use_cached_wrapped_rpc():
         # Establish that the underlying gRPC stub method was called.
         assert mock_rpc.call_count == 1
 
-        # Operation methods build a cached wrapper on first rpc call
-        # subsequent calls should use the cached wrapper
+        # Operation methods call wrapper_fn to build a cached
+        # client._transport.operations_client instance on first rpc call.
+        # Subsequent calls should use the cached wrapper
         wrapper_fn.reset_mock()
 
         client.batch_delete_pipeline_jobs(request)
@@ -5423,31 +5421,28 @@ async def test_batch_delete_pipeline_jobs_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.batch_delete_pipeline_jobs
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.batch_delete_pipeline_jobs(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
-        # Operation methods build a cached wrapper on first rpc call
-        # subsequent calls should use the cached wrapper
+        # Operation methods call wrapper_fn to build a cached
+        # client._transport.operations_client instance on first rpc call.
+        # Subsequent calls should use the cached wrapper
         wrapper_fn.reset_mock()
 
         await client.batch_delete_pipeline_jobs(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -5819,27 +5814,23 @@ async def test_cancel_pipeline_job_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.cancel_pipeline_job
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.cancel_pipeline_job(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.cancel_pipeline_job(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -6145,8 +6136,9 @@ def test_batch_cancel_pipeline_jobs_use_cached_wrapped_rpc():
         # Establish that the underlying gRPC stub method was called.
         assert mock_rpc.call_count == 1
 
-        # Operation methods build a cached wrapper on first rpc call
-        # subsequent calls should use the cached wrapper
+        # Operation methods call wrapper_fn to build a cached
+        # client._transport.operations_client instance on first rpc call.
+        # Subsequent calls should use the cached wrapper
         wrapper_fn.reset_mock()
 
         client.batch_cancel_pipeline_jobs(request)
@@ -6202,31 +6194,28 @@ async def test_batch_cancel_pipeline_jobs_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.batch_cancel_pipeline_jobs
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.batch_cancel_pipeline_jobs(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
-        # Operation methods build a cached wrapper on first rpc call
-        # subsequent calls should use the cached wrapper
+        # Operation methods call wrapper_fn to build a cached
+        # client._transport.operations_client instance on first rpc call.
+        # Subsequent calls should use the cached wrapper
         wrapper_fn.reset_mock()
 
         await client.batch_cancel_pipeline_jobs(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -6832,7 +6821,7 @@ def test_create_training_pipeline_rest_required_fields(
 
             response = client.create_training_pipeline(request)
 
-            expected_params = []
+            expected_params = [("$alt", "json;enum-encoding=int")]
             actual_params = req.call_args.kwargs["params"]
             assert expected_params == actual_params
 
@@ -7162,7 +7151,7 @@ def test_get_training_pipeline_rest_required_fields(
 
             response = client.get_training_pipeline(request)
 
-            expected_params = []
+            expected_params = [("$alt", "json;enum-encoding=int")]
             actual_params = req.call_args.kwargs["params"]
             assert expected_params == actual_params
 
@@ -7485,7 +7474,7 @@ def test_list_training_pipelines_rest_required_fields(
 
             response = client.list_training_pipelines(request)
 
-            expected_params = []
+            expected_params = [("$alt", "json;enum-encoding=int")]
             actual_params = req.call_args.kwargs["params"]
             assert expected_params == actual_params
 
@@ -7860,7 +7849,7 @@ def test_delete_training_pipeline_rest_required_fields(
 
             response = client.delete_training_pipeline(request)
 
-            expected_params = []
+            expected_params = [("$alt", "json;enum-encoding=int")]
             actual_params = req.call_args.kwargs["params"]
             assert expected_params == actual_params
 
@@ -8167,7 +8156,7 @@ def test_cancel_training_pipeline_rest_required_fields(
 
             response = client.cancel_training_pipeline(request)
 
-            expected_params = []
+            expected_params = [("$alt", "json;enum-encoding=int")]
             actual_params = req.call_args.kwargs["params"]
             assert expected_params == actual_params
 
@@ -8436,6 +8425,8 @@ def test_create_pipeline_job_rest(request_type):
         "template_metadata": {"version": "version_value"},
         "schedule_name": "schedule_name_value",
         "preflight_validations": True,
+        "satisfies_pzs": True,
+        "satisfies_pzi": True,
     }
     # The version of a generated dependency at test runtime may differ from the version used during generation.
     # Delete any fields which are not present in the current runtime dependency
@@ -8519,6 +8510,8 @@ def test_create_pipeline_job_rest(request_type):
             template_uri="template_uri_value",
             schedule_name="schedule_name_value",
             preflight_validations=True,
+            satisfies_pzs=True,
+            satisfies_pzi=True,
         )
 
         # Wrap the value into a proper Response obj
@@ -8543,6 +8536,8 @@ def test_create_pipeline_job_rest(request_type):
     assert response.template_uri == "template_uri_value"
     assert response.schedule_name == "schedule_name_value"
     assert response.preflight_validations is True
+    assert response.satisfies_pzs is True
+    assert response.satisfies_pzi is True
 
 
 def test_create_pipeline_job_rest_use_cached_wrapped_rpc():
@@ -8657,7 +8652,7 @@ def test_create_pipeline_job_rest_required_fields(
 
             response = client.create_pipeline_job(request)
 
-            expected_params = []
+            expected_params = [("$alt", "json;enum-encoding=int")]
             actual_params = req.call_args.kwargs["params"]
             assert expected_params == actual_params
 
@@ -8857,6 +8852,8 @@ def test_get_pipeline_job_rest(request_type):
             template_uri="template_uri_value",
             schedule_name="schedule_name_value",
             preflight_validations=True,
+            satisfies_pzs=True,
+            satisfies_pzi=True,
         )
 
         # Wrap the value into a proper Response obj
@@ -8881,6 +8878,8 @@ def test_get_pipeline_job_rest(request_type):
     assert response.template_uri == "template_uri_value"
     assert response.schedule_name == "schedule_name_value"
     assert response.preflight_validations is True
+    assert response.satisfies_pzs is True
+    assert response.satisfies_pzi is True
 
 
 def test_get_pipeline_job_rest_use_cached_wrapped_rpc():
@@ -8990,7 +8989,7 @@ def test_get_pipeline_job_rest_required_fields(
 
             response = client.get_pipeline_job(request)
 
-            expected_params = []
+            expected_params = [("$alt", "json;enum-encoding=int")]
             actual_params = req.call_args.kwargs["params"]
             assert expected_params == actual_params
 
@@ -9309,7 +9308,7 @@ def test_list_pipeline_jobs_rest_required_fields(
 
             response = client.list_pipeline_jobs(request)
 
-            expected_params = []
+            expected_params = [("$alt", "json;enum-encoding=int")]
             actual_params = req.call_args.kwargs["params"]
             assert expected_params == actual_params
 
@@ -9680,7 +9679,7 @@ def test_delete_pipeline_job_rest_required_fields(
 
             response = client.delete_pipeline_job(request)
 
-            expected_params = []
+            expected_params = [("$alt", "json;enum-encoding=int")]
             actual_params = req.call_args.kwargs["params"]
             assert expected_params == actual_params
 
@@ -9991,7 +9990,7 @@ def test_batch_delete_pipeline_jobs_rest_required_fields(
 
             response = client.batch_delete_pipeline_jobs(request)
 
-            expected_params = []
+            expected_params = [("$alt", "json;enum-encoding=int")]
             actual_params = req.call_args.kwargs["params"]
             assert expected_params == actual_params
 
@@ -10302,7 +10301,7 @@ def test_cancel_pipeline_job_rest_required_fields(
 
             response = client.cancel_pipeline_job(request)
 
-            expected_params = []
+            expected_params = [("$alt", "json;enum-encoding=int")]
             actual_params = req.call_args.kwargs["params"]
             assert expected_params == actual_params
 
@@ -10603,7 +10602,7 @@ def test_batch_cancel_pipeline_jobs_rest_required_fields(
 
             response = client.batch_cancel_pipeline_jobs(request)
 
-            expected_params = []
+            expected_params = [("$alt", "json;enum-encoding=int")]
             actual_params = req.call_args.kwargs["params"]
             assert expected_params == actual_params
 

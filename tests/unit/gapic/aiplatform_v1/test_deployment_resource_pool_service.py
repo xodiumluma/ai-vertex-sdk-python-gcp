@@ -47,6 +47,7 @@ from google.api_core import operation
 from google.api_core import operation_async  # type: ignore
 from google.api_core import operations_v1
 from google.api_core import path_template
+from google.api_core import retry as retries
 from google.auth import credentials as ga_credentials
 from google.auth.exceptions import MutualTLSChannelError
 from google.cloud.aiplatform_v1.services.deployment_resource_pool_service import (
@@ -69,6 +70,7 @@ from google.cloud.aiplatform_v1.types import encryption_spec
 from google.cloud.aiplatform_v1.types import endpoint
 from google.cloud.aiplatform_v1.types import machine_resources
 from google.cloud.aiplatform_v1.types import operation as gca_operation
+from google.cloud.aiplatform_v1.types import reservation_affinity
 from google.cloud.location import locations_pb2
 from google.iam.v1 import iam_policy_pb2  # type: ignore
 from google.iam.v1 import options_pb2  # type: ignore
@@ -1366,8 +1368,9 @@ def test_create_deployment_resource_pool_use_cached_wrapped_rpc():
         # Establish that the underlying gRPC stub method was called.
         assert mock_rpc.call_count == 1
 
-        # Operation methods build a cached wrapper on first rpc call
-        # subsequent calls should use the cached wrapper
+        # Operation methods call wrapper_fn to build a cached
+        # client._transport.operations_client instance on first rpc call.
+        # Subsequent calls should use the cached wrapper
         wrapper_fn.reset_mock()
 
         client.create_deployment_resource_pool(request)
@@ -1426,31 +1429,28 @@ async def test_create_deployment_resource_pool_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.create_deployment_resource_pool
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.create_deployment_resource_pool(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
-        # Operation methods build a cached wrapper on first rpc call
-        # subsequent calls should use the cached wrapper
+        # Operation methods call wrapper_fn to build a cached
+        # client._transport.operations_client instance on first rpc call.
+        # Subsequent calls should use the cached wrapper
         wrapper_fn.reset_mock()
 
         await client.create_deployment_resource_pool(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -1701,6 +1701,8 @@ def test_get_deployment_resource_pool(request_type, transport: str = "grpc"):
             name="name_value",
             service_account="service_account_value",
             disable_container_logging=True,
+            satisfies_pzs=True,
+            satisfies_pzi=True,
         )
         response = client.get_deployment_resource_pool(request)
 
@@ -1715,6 +1717,8 @@ def test_get_deployment_resource_pool(request_type, transport: str = "grpc"):
     assert response.name == "name_value"
     assert response.service_account == "service_account_value"
     assert response.disable_container_logging is True
+    assert response.satisfies_pzs is True
+    assert response.satisfies_pzi is True
 
 
 def test_get_deployment_resource_pool_empty_call():
@@ -1832,6 +1836,8 @@ async def test_get_deployment_resource_pool_empty_call_async():
                 name="name_value",
                 service_account="service_account_value",
                 disable_container_logging=True,
+                satisfies_pzs=True,
+                satisfies_pzi=True,
             )
         )
         response = await client.get_deployment_resource_pool()
@@ -1866,27 +1872,23 @@ async def test_get_deployment_resource_pool_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.get_deployment_resource_pool
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.get_deployment_resource_pool(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.get_deployment_resource_pool(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -1913,6 +1915,8 @@ async def test_get_deployment_resource_pool_async(
                 name="name_value",
                 service_account="service_account_value",
                 disable_container_logging=True,
+                satisfies_pzs=True,
+                satisfies_pzi=True,
             )
         )
         response = await client.get_deployment_resource_pool(request)
@@ -1928,6 +1932,8 @@ async def test_get_deployment_resource_pool_async(
     assert response.name == "name_value"
     assert response.service_account == "service_account_value"
     assert response.disable_container_logging is True
+    assert response.satisfies_pzs is True
+    assert response.satisfies_pzi is True
 
 
 @pytest.mark.asyncio
@@ -2275,27 +2281,23 @@ async def test_list_deployment_resource_pools_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.list_deployment_resource_pools
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.list_deployment_resource_pools(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.list_deployment_resource_pools(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -2537,12 +2539,18 @@ def test_list_deployment_resource_pools_pager(transport_name: str = "grpc"):
         )
 
         expected_metadata = ()
+        retry = retries.Retry()
+        timeout = 5
         expected_metadata = tuple(expected_metadata) + (
             gapic_v1.routing_header.to_grpc_metadata((("parent", ""),)),
         )
-        pager = client.list_deployment_resource_pools(request={})
+        pager = client.list_deployment_resource_pools(
+            request={}, retry=retry, timeout=timeout
+        )
 
         assert pager._metadata == expected_metadata
+        assert pager._retry == retry
+        assert pager._timeout == timeout
 
         results = list(pager)
         assert len(results) == 6
@@ -2822,8 +2830,9 @@ def test_update_deployment_resource_pool_use_cached_wrapped_rpc():
         # Establish that the underlying gRPC stub method was called.
         assert mock_rpc.call_count == 1
 
-        # Operation methods build a cached wrapper on first rpc call
-        # subsequent calls should use the cached wrapper
+        # Operation methods call wrapper_fn to build a cached
+        # client._transport.operations_client instance on first rpc call.
+        # Subsequent calls should use the cached wrapper
         wrapper_fn.reset_mock()
 
         client.update_deployment_resource_pool(request)
@@ -2882,31 +2891,28 @@ async def test_update_deployment_resource_pool_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.update_deployment_resource_pool
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.update_deployment_resource_pool(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
-        # Operation methods build a cached wrapper on first rpc call
-        # subsequent calls should use the cached wrapper
+        # Operation methods call wrapper_fn to build a cached
+        # client._transport.operations_client instance on first rpc call.
+        # Subsequent calls should use the cached wrapper
         wrapper_fn.reset_mock()
 
         await client.update_deployment_resource_pool(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -3245,8 +3251,9 @@ def test_delete_deployment_resource_pool_use_cached_wrapped_rpc():
         # Establish that the underlying gRPC stub method was called.
         assert mock_rpc.call_count == 1
 
-        # Operation methods build a cached wrapper on first rpc call
-        # subsequent calls should use the cached wrapper
+        # Operation methods call wrapper_fn to build a cached
+        # client._transport.operations_client instance on first rpc call.
+        # Subsequent calls should use the cached wrapper
         wrapper_fn.reset_mock()
 
         client.delete_deployment_resource_pool(request)
@@ -3305,31 +3312,28 @@ async def test_delete_deployment_resource_pool_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.delete_deployment_resource_pool
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.delete_deployment_resource_pool(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
-        # Operation methods build a cached wrapper on first rpc call
-        # subsequent calls should use the cached wrapper
+        # Operation methods call wrapper_fn to build a cached
+        # client._transport.operations_client instance on first rpc call.
+        # Subsequent calls should use the cached wrapper
         wrapper_fn.reset_mock()
 
         await client.delete_deployment_resource_pool(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -3709,27 +3713,23 @@ async def test_query_deployed_models_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.query_deployed_models
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.query_deployed_models(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.query_deployed_models(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -3975,14 +3975,18 @@ def test_query_deployed_models_pager(transport_name: str = "grpc"):
         )
 
         expected_metadata = ()
+        retry = retries.Retry()
+        timeout = 5
         expected_metadata = tuple(expected_metadata) + (
             gapic_v1.routing_header.to_grpc_metadata(
                 (("deployment_resource_pool", ""),)
             ),
         )
-        pager = client.query_deployed_models(request={})
+        pager = client.query_deployed_models(request={}, retry=retry, timeout=timeout)
 
         assert pager._metadata == expected_metadata
+        assert pager._retry == retry
+        assert pager._timeout == timeout
 
         results = list(pager)
         assert len(results) == 6
@@ -4289,7 +4293,7 @@ def test_create_deployment_resource_pool_rest_required_fields(
 
             response = client.create_deployment_resource_pool(request)
 
-            expected_params = []
+            expected_params = [("$alt", "json;enum-encoding=int")]
             actual_params = req.call_args.kwargs["params"]
             assert expected_params == actual_params
 
@@ -4497,6 +4501,8 @@ def test_get_deployment_resource_pool_rest(request_type):
             name="name_value",
             service_account="service_account_value",
             disable_container_logging=True,
+            satisfies_pzs=True,
+            satisfies_pzi=True,
         )
 
         # Wrap the value into a proper Response obj
@@ -4515,6 +4521,8 @@ def test_get_deployment_resource_pool_rest(request_type):
     assert response.name == "name_value"
     assert response.service_account == "service_account_value"
     assert response.disable_container_logging is True
+    assert response.satisfies_pzs is True
+    assert response.satisfies_pzi is True
 
 
 def test_get_deployment_resource_pool_rest_use_cached_wrapped_rpc():
@@ -4629,7 +4637,7 @@ def test_get_deployment_resource_pool_rest_required_fields(
 
             response = client.get_deployment_resource_pool(request)
 
-            expected_params = []
+            expected_params = [("$alt", "json;enum-encoding=int")]
             actual_params = req.call_args.kwargs["params"]
             assert expected_params == actual_params
 
@@ -4967,7 +4975,7 @@ def test_list_deployment_resource_pools_rest_required_fields(
 
             response = client.list_deployment_resource_pools(request)
 
-            expected_params = []
+            expected_params = [("$alt", "json;enum-encoding=int")]
             actual_params = req.call_args.kwargs["params"]
             assert expected_params == actual_params
 
@@ -5240,17 +5248,25 @@ def test_update_deployment_resource_pool_rest(request_type):
                 "accelerator_type": 1,
                 "accelerator_count": 1805,
                 "tpu_topology": "tpu_topology_value",
+                "reservation_affinity": {
+                    "reservation_affinity_type": 1,
+                    "key": "key_value",
+                    "values": ["values_value1", "values_value2"],
+                },
             },
             "min_replica_count": 1803,
             "max_replica_count": 1805,
             "autoscaling_metric_specs": [
                 {"metric_name": "metric_name_value", "target": 647}
             ],
+            "spot": True,
         },
         "encryption_spec": {"kms_key_name": "kms_key_name_value"},
         "service_account": "service_account_value",
         "disable_container_logging": True,
         "create_time": {"seconds": 751, "nanos": 543},
+        "satisfies_pzs": True,
+        "satisfies_pzi": True,
     }
     # The version of a generated dependency at test runtime may differ from the version used during generation.
     # Delete any fields which are not present in the current runtime dependency
@@ -5452,7 +5468,7 @@ def test_update_deployment_resource_pool_rest_required_fields(
 
             response = client.update_deployment_resource_pool(request)
 
-            expected_params = []
+            expected_params = [("$alt", "json;enum-encoding=int")]
             actual_params = req.call_args.kwargs["params"]
             assert expected_params == actual_params
 
@@ -5787,7 +5803,7 @@ def test_delete_deployment_resource_pool_rest_required_fields(
 
             response = client.delete_deployment_resource_pool(request)
 
-            expected_params = []
+            expected_params = [("$alt", "json;enum-encoding=int")]
             actual_params = req.call_args.kwargs["params"]
             assert expected_params == actual_params
 
@@ -6127,7 +6143,7 @@ def test_query_deployed_models_rest_required_fields(
 
             response = client.query_deployed_models(request)
 
-            expected_params = []
+            expected_params = [("$alt", "json;enum-encoding=int")]
             actual_params = req.call_args.kwargs["params"]
             assert expected_params == actual_params
 
@@ -7078,8 +7094,36 @@ def test_parse_model_path():
     assert expected == actual
 
 
+def test_reservation_path():
+    project_id_or_number = "cuttlefish"
+    zone = "mussel"
+    reservation_name = "winkle"
+    expected = "projects/{project_id_or_number}/zones/{zone}/reservations/{reservation_name}".format(
+        project_id_or_number=project_id_or_number,
+        zone=zone,
+        reservation_name=reservation_name,
+    )
+    actual = DeploymentResourcePoolServiceClient.reservation_path(
+        project_id_or_number, zone, reservation_name
+    )
+    assert expected == actual
+
+
+def test_parse_reservation_path():
+    expected = {
+        "project_id_or_number": "nautilus",
+        "zone": "scallop",
+        "reservation_name": "abalone",
+    }
+    path = DeploymentResourcePoolServiceClient.reservation_path(**expected)
+
+    # Check that the path construction is reversible.
+    actual = DeploymentResourcePoolServiceClient.parse_reservation_path(path)
+    assert expected == actual
+
+
 def test_common_billing_account_path():
-    billing_account = "cuttlefish"
+    billing_account = "squid"
     expected = "billingAccounts/{billing_account}".format(
         billing_account=billing_account,
     )
@@ -7091,7 +7135,7 @@ def test_common_billing_account_path():
 
 def test_parse_common_billing_account_path():
     expected = {
-        "billing_account": "mussel",
+        "billing_account": "clam",
     }
     path = DeploymentResourcePoolServiceClient.common_billing_account_path(**expected)
 
@@ -7101,7 +7145,7 @@ def test_parse_common_billing_account_path():
 
 
 def test_common_folder_path():
-    folder = "winkle"
+    folder = "whelk"
     expected = "folders/{folder}".format(
         folder=folder,
     )
@@ -7111,7 +7155,7 @@ def test_common_folder_path():
 
 def test_parse_common_folder_path():
     expected = {
-        "folder": "nautilus",
+        "folder": "octopus",
     }
     path = DeploymentResourcePoolServiceClient.common_folder_path(**expected)
 
@@ -7121,7 +7165,7 @@ def test_parse_common_folder_path():
 
 
 def test_common_organization_path():
-    organization = "scallop"
+    organization = "oyster"
     expected = "organizations/{organization}".format(
         organization=organization,
     )
@@ -7131,7 +7175,7 @@ def test_common_organization_path():
 
 def test_parse_common_organization_path():
     expected = {
-        "organization": "abalone",
+        "organization": "nudibranch",
     }
     path = DeploymentResourcePoolServiceClient.common_organization_path(**expected)
 
@@ -7141,7 +7185,7 @@ def test_parse_common_organization_path():
 
 
 def test_common_project_path():
-    project = "squid"
+    project = "cuttlefish"
     expected = "projects/{project}".format(
         project=project,
     )
@@ -7151,7 +7195,7 @@ def test_common_project_path():
 
 def test_parse_common_project_path():
     expected = {
-        "project": "clam",
+        "project": "mussel",
     }
     path = DeploymentResourcePoolServiceClient.common_project_path(**expected)
 
@@ -7161,8 +7205,8 @@ def test_parse_common_project_path():
 
 
 def test_common_location_path():
-    project = "whelk"
-    location = "octopus"
+    project = "winkle"
+    location = "nautilus"
     expected = "projects/{project}/locations/{location}".format(
         project=project,
         location=location,
@@ -7173,8 +7217,8 @@ def test_common_location_path():
 
 def test_parse_common_location_path():
     expected = {
-        "project": "oyster",
-        "location": "nudibranch",
+        "project": "scallop",
+        "location": "abalone",
     }
     path = DeploymentResourcePoolServiceClient.common_location_path(**expected)
 

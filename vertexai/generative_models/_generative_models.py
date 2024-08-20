@@ -126,6 +126,8 @@ def _get_resource_name_from_model_name(
 ) -> str:
     """Returns the full resource name starting with projects/ given a model name."""
     if model_name.startswith("publishers/"):
+        if not project:
+            return model_name
         return f"projects/{project}/locations/{location}/{model_name}"
     elif model_name.startswith("projects/"):
         return model_name
@@ -337,7 +339,7 @@ class _GenerativeModel:
 
         location = aiplatform_utils.extract_project_and_location_from_parent(
             prediction_resource_name
-        )["location"]
+        ).get("location")
 
         self._model_name = model_name
         self._prediction_resource_name = prediction_resource_name
@@ -823,7 +825,7 @@ class _GenerativeModel:
     def compute_tokens(
         self, contents: ContentsType
     ) -> gapic_llm_utility_service_types.ComputeTokensResponse:
-        """Counts tokens.
+        """Computes tokens.
 
         Args:
             contents: Contents to send to the model.
@@ -835,9 +837,13 @@ class _GenerativeModel:
                 * List[Content]
 
         Returns:
-            A CountTokensResponse object that has the following attributes:
-                total_tokens: The total number of tokens counted across all instances from the request.
-                total_billable_characters: The total number of billable characters counted across all instances from the request.
+            A ComputeTokensResponse object that has the following attributes:
+                tokens_info: Lists of tokens_info from the input.
+                             The input `contents: ContentsType` could have
+                             multiple string instances and each tokens_info
+                             item represents each string instance. Each token
+                             info consists tokens list, token_ids list and
+                             a role.
         """
         return self._llm_utility_client.compute_tokens(
             request=gapic_llm_utility_service_types.ComputeTokensRequest(
@@ -850,7 +856,7 @@ class _GenerativeModel:
     async def compute_tokens_async(
         self, contents: ContentsType
     ) -> gapic_llm_utility_service_types.ComputeTokensResponse:
-        """Counts tokens asynchronously.
+        """Computes tokens asynchronously.
 
         Args:
             contents: Contents to send to the model.
@@ -862,9 +868,13 @@ class _GenerativeModel:
                 * List[Content]
 
         Returns:
-            And awaitable for a CountTokensResponse object that has the following attributes:
-                total_tokens: The total number of tokens counted across all instances from the request.
-                total_billable_characters: The total number of billable characters counted across all instances from the request.
+            And awaitable for a ComputeTokensResponse object that has the following attributes:
+                tokens_info: Lists of tokens_info from the input.
+                             The input `contents: ContentsType` could have
+                             multiple string instances and each tokens_info
+                             item represents each string instance. Each token
+                             info consists tokens list, token_ids list and
+                             a role.
         """
         return await self._llm_utility_async_client.compute_tokens(
             request=gapic_llm_utility_service_types.ComputeTokensRequest(
@@ -925,7 +935,7 @@ def _validate_response(
         candidate = response.candidates[0]
         if candidate.finish_reason not in _SUCCESSFUL_FINISH_REASONS:
             message = (
-                "The model response did not completed successfully.\n"
+                "The model response did not complete successfully.\n"
                 f"Finish reason: {candidate.finish_reason}.\n"
                 f"Finish message: {candidate.finish_message}.\n"
                 f"Safety ratings: {candidate.safety_ratings}.\n"
@@ -1396,6 +1406,7 @@ class GenerationConfig:
         frequency_penalty: Optional[float] = None,
         response_mime_type: Optional[str] = None,
         response_schema: Optional[Dict[str, Any]] = None,
+        seed: Optional[int] = None,
     ):
         r"""Constructs a GenerationConfig object.
 
@@ -1404,6 +1415,7 @@ class GenerationConfig:
             top_p: If specified, nucleus sampling will be used. Range: (0.0, 1.0]
             top_k: If specified, top-k sampling will be used.
             candidate_count: Number of candidates to generate.
+            seed: Random seed for the generation.
             max_output_tokens: The maximum number of output tokens to generate per message.
             stop_sequences: A list of stop sequences.
             presence_penalty: Positive values penalize tokens that have appeared in the generated text,
@@ -1432,6 +1444,7 @@ class GenerationConfig:
                     candidate_count=1,
                     max_output_tokens=100,
                     stop_sequences=["\n\n\n"],
+                    seed=5,
                 )
             )
             ```
@@ -1452,6 +1465,7 @@ class GenerationConfig:
             frequency_penalty=frequency_penalty,
             response_mime_type=response_mime_type,
             response_schema=raw_schema,
+            seed=seed,
         )
 
     @classmethod
@@ -2286,34 +2300,7 @@ class preview_grounding:  # pylint: disable=invalid-name
                 datastore=datastore,
             )
 
-    class GoogleSearchRetrieval:
-        r"""Tool to retrieve public web data for grounding, powered by
-        Google Search.
-
-        Attributes:
-            disable_attribution (bool):
-                Optional. Disable using the result from this
-                tool in detecting grounding attribution. This
-                does not affect how the result is given to the
-                model for generation.
-        """
-
-        def __init__(
-            self,
-            disable_attribution: Optional[bool] = None,
-        ):
-            """Initializes a Google Search Retrieval tool.
-
-            Args:
-                disable_attribution (bool):
-                    Optional. Disable using the result from this
-                    tool in detecting grounding attribution. This
-                    does not affect how the result is given to the
-                    model for generation.
-            """
-            self._raw_google_search_retrieval = gapic_tool_types.GoogleSearchRetrieval(
-                disable_attribution=disable_attribution,
-            )
+    GoogleSearchRetrieval = grounding.GoogleSearchRetrieval
 
 
 def _to_content(
@@ -2687,11 +2674,29 @@ class _PreviewGenerativeModel(_GenerativeModel):
     @classmethod
     def from_cached_content(
         cls,
-        cached_content: "caching.CachedContent",
+        cached_content: Union[str, "caching.CachedContent"],
         *,
         generation_config: Optional[GenerationConfigType] = None,
         safety_settings: Optional[SafetySettingsType] = None,
     ) -> "_GenerativeModel":
+        """Creates a model from cached content.
+
+        Creates a model instance with an existing cached content. The cached
+        content becomes the prefix of the requesting contents.
+
+        Args:
+            cached_content: The cached content resource name or object.
+            generation_config: The generation config to use for this model.
+            safety_settings: The safety settings to use for this model.
+
+        Returns:
+            A model instance with the cached content wtih cached content as
+            prefix of all its requests.
+        """
+        if isinstance(cached_content, str):
+            from vertexai.preview import caching
+
+            cached_content = caching.CachedContent.get(cached_content)
         model_name = cached_content.model_name
         model = cls(
             model_name=model_name,

@@ -43,6 +43,7 @@ from google.api_core import gapic_v1
 from google.api_core import grpc_helpers
 from google.api_core import grpc_helpers_async
 from google.api_core import path_template
+from google.api_core import retry as retries
 from google.auth import credentials as ga_credentials
 from google.auth.exceptions import MutualTLSChannelError
 from google.cloud.aiplatform_v1.services.llm_utility_service import (
@@ -54,6 +55,7 @@ from google.cloud.aiplatform_v1.services.llm_utility_service import (
 from google.cloud.aiplatform_v1.services.llm_utility_service import transports
 from google.cloud.aiplatform_v1.types import content
 from google.cloud.aiplatform_v1.types import llm_utility_service
+from google.cloud.aiplatform_v1.types import openapi
 from google.cloud.aiplatform_v1.types import prediction_service
 from google.cloud.aiplatform_v1.types import tool
 from google.cloud.location import locations_pb2
@@ -1339,27 +1341,23 @@ async def test_count_tokens_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.count_tokens
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.count_tokens(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.count_tokens(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -1717,27 +1715,23 @@ async def test_compute_tokens_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.compute_tokens
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.compute_tokens(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.compute_tokens(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -2015,7 +2009,6 @@ def test_count_tokens_rest_required_fields(
 
     request_init = {}
     request_init["endpoint"] = ""
-    request_init["model"] = ""
     request = request_type(**request_init)
     pb_request = request_type.pb(request)
     jsonified_request = json.loads(
@@ -2032,7 +2025,6 @@ def test_count_tokens_rest_required_fields(
     # verify required fields with default values are now present
 
     jsonified_request["endpoint"] = "endpoint_value"
-    jsonified_request["model"] = "model_value"
 
     unset_fields = transport_class(
         credentials=ga_credentials.AnonymousCredentials()
@@ -2042,8 +2034,6 @@ def test_count_tokens_rest_required_fields(
     # verify required fields with non-default values are left alone
     assert "endpoint" in jsonified_request
     assert jsonified_request["endpoint"] == "endpoint_value"
-    assert "model" in jsonified_request
-    assert jsonified_request["model"] == "model_value"
 
     client = LlmUtilityServiceClient(
         credentials=ga_credentials.AnonymousCredentials(),
@@ -2082,7 +2072,7 @@ def test_count_tokens_rest_required_fields(
 
             response = client.count_tokens(request)
 
-            expected_params = []
+            expected_params = [("$alt", "json;enum-encoding=int")]
             actual_params = req.call_args.kwargs["params"]
             assert expected_params == actual_params
 
@@ -2093,17 +2083,7 @@ def test_count_tokens_rest_unset_required_fields():
     )
 
     unset_fields = transport.count_tokens._get_unset_required_fields({})
-    assert set(unset_fields) == (
-        set(())
-        & set(
-            (
-                "endpoint",
-                "model",
-                "instances",
-                "contents",
-            )
-        )
-    )
+    assert set(unset_fields) == (set(()) & set(("endpoint",)))
 
 
 @pytest.mark.parametrize("null_interceptor", [True, False])
@@ -2397,7 +2377,7 @@ def test_compute_tokens_rest_required_fields(
 
             response = client.compute_tokens(request)
 
-            expected_params = []
+            expected_params = [("$alt", "json;enum-encoding=int")]
             actual_params = req.call_args.kwargs["params"]
             assert expected_params == actual_params
 

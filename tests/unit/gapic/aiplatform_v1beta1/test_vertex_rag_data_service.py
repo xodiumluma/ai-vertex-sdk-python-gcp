@@ -47,6 +47,7 @@ from google.api_core import operation
 from google.api_core import operation_async  # type: ignore
 from google.api_core import operations_v1
 from google.api_core import path_template
+from google.api_core import retry as retries
 from google.auth import credentials as ga_credentials
 from google.auth.exceptions import MutualTLSChannelError
 from google.cloud.aiplatform_v1beta1.services.vertex_rag_data_service import (
@@ -57,6 +58,7 @@ from google.cloud.aiplatform_v1beta1.services.vertex_rag_data_service import (
 )
 from google.cloud.aiplatform_v1beta1.services.vertex_rag_data_service import pagers
 from google.cloud.aiplatform_v1beta1.services.vertex_rag_data_service import transports
+from google.cloud.aiplatform_v1beta1.types import api_auth
 from google.cloud.aiplatform_v1beta1.types import io
 from google.cloud.aiplatform_v1beta1.types import operation as gca_operation
 from google.cloud.aiplatform_v1beta1.types import vertex_rag_data
@@ -1322,8 +1324,9 @@ def test_create_rag_corpus_use_cached_wrapped_rpc():
         # Establish that the underlying gRPC stub method was called.
         assert mock_rpc.call_count == 1
 
-        # Operation methods build a cached wrapper on first rpc call
-        # subsequent calls should use the cached wrapper
+        # Operation methods call wrapper_fn to build a cached
+        # client._transport.operations_client instance on first rpc call.
+        # Subsequent calls should use the cached wrapper
         wrapper_fn.reset_mock()
 
         client.create_rag_corpus(request)
@@ -1379,31 +1382,28 @@ async def test_create_rag_corpus_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.create_rag_corpus
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.create_rag_corpus(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
-        # Operation methods build a cached wrapper on first rpc call
-        # subsequent calls should use the cached wrapper
+        # Operation methods call wrapper_fn to build a cached
+        # client._transport.operations_client instance on first rpc call.
+        # Subsequent calls should use the cached wrapper
         wrapper_fn.reset_mock()
 
         await client.create_rag_corpus(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -1776,27 +1776,23 @@ async def test_get_rag_corpus_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.get_rag_corpus
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.get_rag_corpus(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.get_rag_corpus(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -2154,27 +2150,23 @@ async def test_list_rag_corpora_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.list_rag_corpora
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.list_rag_corpora(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.list_rag_corpora(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -2398,12 +2390,16 @@ def test_list_rag_corpora_pager(transport_name: str = "grpc"):
         )
 
         expected_metadata = ()
+        retry = retries.Retry()
+        timeout = 5
         expected_metadata = tuple(expected_metadata) + (
             gapic_v1.routing_header.to_grpc_metadata((("parent", ""),)),
         )
-        pager = client.list_rag_corpora(request={})
+        pager = client.list_rag_corpora(request={}, retry=retry, timeout=timeout)
 
         assert pager._metadata == expected_metadata
+        assert pager._retry == retry
+        assert pager._timeout == timeout
 
         results = list(pager)
         assert len(results) == 6
@@ -2666,8 +2662,9 @@ def test_delete_rag_corpus_use_cached_wrapped_rpc():
         # Establish that the underlying gRPC stub method was called.
         assert mock_rpc.call_count == 1
 
-        # Operation methods build a cached wrapper on first rpc call
-        # subsequent calls should use the cached wrapper
+        # Operation methods call wrapper_fn to build a cached
+        # client._transport.operations_client instance on first rpc call.
+        # Subsequent calls should use the cached wrapper
         wrapper_fn.reset_mock()
 
         client.delete_rag_corpus(request)
@@ -2723,31 +2720,28 @@ async def test_delete_rag_corpus_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.delete_rag_corpus
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.delete_rag_corpus(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
-        # Operation methods build a cached wrapper on first rpc call
-        # subsequent calls should use the cached wrapper
+        # Operation methods call wrapper_fn to build a cached
+        # client._transport.operations_client instance on first rpc call.
+        # Subsequent calls should use the cached wrapper
         wrapper_fn.reset_mock()
 
         await client.delete_rag_corpus(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -3099,27 +3093,23 @@ async def test_upload_rag_file_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.upload_rag_file
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.upload_rag_file(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.upload_rag_file(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -3464,8 +3454,9 @@ def test_import_rag_files_use_cached_wrapped_rpc():
         # Establish that the underlying gRPC stub method was called.
         assert mock_rpc.call_count == 1
 
-        # Operation methods build a cached wrapper on first rpc call
-        # subsequent calls should use the cached wrapper
+        # Operation methods call wrapper_fn to build a cached
+        # client._transport.operations_client instance on first rpc call.
+        # Subsequent calls should use the cached wrapper
         wrapper_fn.reset_mock()
 
         client.import_rag_files(request)
@@ -3519,31 +3510,28 @@ async def test_import_rag_files_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.import_rag_files
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.import_rag_files(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
-        # Operation methods build a cached wrapper on first rpc call
-        # subsequent calls should use the cached wrapper
+        # Operation methods call wrapper_fn to build a cached
+        # client._transport.operations_client instance on first rpc call.
+        # Subsequent calls should use the cached wrapper
         wrapper_fn.reset_mock()
 
         await client.import_rag_files(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -3926,27 +3914,23 @@ async def test_get_rag_file_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.get_rag_file
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.get_rag_file(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.get_rag_file(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -4308,27 +4292,23 @@ async def test_list_rag_files_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.list_rag_files
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.list_rag_files(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.list_rag_files(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -4552,12 +4532,16 @@ def test_list_rag_files_pager(transport_name: str = "grpc"):
         )
 
         expected_metadata = ()
+        retry = retries.Retry()
+        timeout = 5
         expected_metadata = tuple(expected_metadata) + (
             gapic_v1.routing_header.to_grpc_metadata((("parent", ""),)),
         )
-        pager = client.list_rag_files(request={})
+        pager = client.list_rag_files(request={}, retry=retry, timeout=timeout)
 
         assert pager._metadata == expected_metadata
+        assert pager._retry == retry
+        assert pager._timeout == timeout
 
         results = list(pager)
         assert len(results) == 6
@@ -4812,8 +4796,9 @@ def test_delete_rag_file_use_cached_wrapped_rpc():
         # Establish that the underlying gRPC stub method was called.
         assert mock_rpc.call_count == 1
 
-        # Operation methods build a cached wrapper on first rpc call
-        # subsequent calls should use the cached wrapper
+        # Operation methods call wrapper_fn to build a cached
+        # client._transport.operations_client instance on first rpc call.
+        # Subsequent calls should use the cached wrapper
         wrapper_fn.reset_mock()
 
         client.delete_rag_file(request)
@@ -4867,31 +4852,28 @@ async def test_delete_rag_file_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.delete_rag_file
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.delete_rag_file(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
-        # Operation methods build a cached wrapper on first rpc call
-        # subsequent calls should use the cached wrapper
+        # Operation methods call wrapper_fn to build a cached
+        # client._transport.operations_client instance on first rpc call.
+        # Subsequent calls should use the cached wrapper
         wrapper_fn.reset_mock()
 
         await client.delete_rag_file(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -5301,7 +5283,7 @@ def test_create_rag_corpus_rest_required_fields(
 
             response = client.create_rag_corpus(request)
 
-            expected_params = []
+            expected_params = [("$alt", "json;enum-encoding=int")]
             actual_params = req.call_args.kwargs["params"]
             assert expected_params == actual_params
 
@@ -5618,7 +5600,7 @@ def test_get_rag_corpus_rest_required_fields(
 
             response = client.get_rag_corpus(request)
 
-            expected_params = []
+            expected_params = [("$alt", "json;enum-encoding=int")]
             actual_params = req.call_args.kwargs["params"]
             assert expected_params == actual_params
 
@@ -5934,7 +5916,7 @@ def test_list_rag_corpora_rest_required_fields(
 
             response = client.list_rag_corpora(request)
 
-            expected_params = []
+            expected_params = [("$alt", "json;enum-encoding=int")]
             actual_params = req.call_args.kwargs["params"]
             assert expected_params == actual_params
 
@@ -6304,7 +6286,7 @@ def test_delete_rag_corpus_rest_required_fields(
 
             response = client.delete_rag_corpus(request)
 
-            expected_params = []
+            expected_params = [("$alt", "json;enum-encoding=int")]
             actual_params = req.call_args.kwargs["params"]
             assert expected_params == actual_params
 
@@ -6609,7 +6591,7 @@ def test_upload_rag_file_rest_required_fields(
 
             response = client.upload_rag_file(request)
 
-            expected_params = []
+            expected_params = [("$alt", "json;enum-encoding=int")]
             actual_params = req.call_args.kwargs["params"]
             assert expected_params == actual_params
 
@@ -6940,7 +6922,7 @@ def test_import_rag_files_rest_required_fields(
 
             response = client.import_rag_files(request)
 
-            expected_params = []
+            expected_params = [("$alt", "json;enum-encoding=int")]
             actual_params = req.call_args.kwargs["params"]
             assert expected_params == actual_params
 
@@ -7271,7 +7253,7 @@ def test_get_rag_file_rest_required_fields(
 
             response = client.get_rag_file(request)
 
-            expected_params = []
+            expected_params = [("$alt", "json;enum-encoding=int")]
             actual_params = req.call_args.kwargs["params"]
             assert expected_params == actual_params
 
@@ -7585,7 +7567,7 @@ def test_list_rag_files_rest_required_fields(
 
             response = client.list_rag_files(request)
 
-            expected_params = []
+            expected_params = [("$alt", "json;enum-encoding=int")]
             actual_params = req.call_args.kwargs["params"]
             assert expected_params == actual_params
 
@@ -7957,7 +7939,7 @@ def test_delete_rag_file_rest_required_fields(
 
             response = client.delete_rag_file(request)
 
-            expected_params = []
+            expected_params = [("$alt", "json;enum-encoding=int")]
             actual_params = req.call_args.kwargs["params"]
             assert expected_params == actual_params
 
@@ -8859,8 +8841,36 @@ def test_parse_rag_file_path():
     assert expected == actual
 
 
+def test_secret_version_path():
+    project = "whelk"
+    secret = "octopus"
+    secret_version = "oyster"
+    expected = "projects/{project}/secrets/{secret}/versions/{secret_version}".format(
+        project=project,
+        secret=secret,
+        secret_version=secret_version,
+    )
+    actual = VertexRagDataServiceClient.secret_version_path(
+        project, secret, secret_version
+    )
+    assert expected == actual
+
+
+def test_parse_secret_version_path():
+    expected = {
+        "project": "nudibranch",
+        "secret": "cuttlefish",
+        "secret_version": "mussel",
+    }
+    path = VertexRagDataServiceClient.secret_version_path(**expected)
+
+    # Check that the path construction is reversible.
+    actual = VertexRagDataServiceClient.parse_secret_version_path(path)
+    assert expected == actual
+
+
 def test_common_billing_account_path():
-    billing_account = "whelk"
+    billing_account = "winkle"
     expected = "billingAccounts/{billing_account}".format(
         billing_account=billing_account,
     )
@@ -8870,7 +8880,7 @@ def test_common_billing_account_path():
 
 def test_parse_common_billing_account_path():
     expected = {
-        "billing_account": "octopus",
+        "billing_account": "nautilus",
     }
     path = VertexRagDataServiceClient.common_billing_account_path(**expected)
 
@@ -8880,7 +8890,7 @@ def test_parse_common_billing_account_path():
 
 
 def test_common_folder_path():
-    folder = "oyster"
+    folder = "scallop"
     expected = "folders/{folder}".format(
         folder=folder,
     )
@@ -8890,7 +8900,7 @@ def test_common_folder_path():
 
 def test_parse_common_folder_path():
     expected = {
-        "folder": "nudibranch",
+        "folder": "abalone",
     }
     path = VertexRagDataServiceClient.common_folder_path(**expected)
 
@@ -8900,7 +8910,7 @@ def test_parse_common_folder_path():
 
 
 def test_common_organization_path():
-    organization = "cuttlefish"
+    organization = "squid"
     expected = "organizations/{organization}".format(
         organization=organization,
     )
@@ -8910,7 +8920,7 @@ def test_common_organization_path():
 
 def test_parse_common_organization_path():
     expected = {
-        "organization": "mussel",
+        "organization": "clam",
     }
     path = VertexRagDataServiceClient.common_organization_path(**expected)
 
@@ -8920,7 +8930,7 @@ def test_parse_common_organization_path():
 
 
 def test_common_project_path():
-    project = "winkle"
+    project = "whelk"
     expected = "projects/{project}".format(
         project=project,
     )
@@ -8930,7 +8940,7 @@ def test_common_project_path():
 
 def test_parse_common_project_path():
     expected = {
-        "project": "nautilus",
+        "project": "octopus",
     }
     path = VertexRagDataServiceClient.common_project_path(**expected)
 
@@ -8940,8 +8950,8 @@ def test_parse_common_project_path():
 
 
 def test_common_location_path():
-    project = "scallop"
-    location = "abalone"
+    project = "oyster"
+    location = "nudibranch"
     expected = "projects/{project}/locations/{location}".format(
         project=project,
         location=location,
@@ -8952,8 +8962,8 @@ def test_common_location_path():
 
 def test_parse_common_location_path():
     expected = {
-        "project": "squid",
-        "location": "clam",
+        "project": "cuttlefish",
+        "location": "mussel",
     }
     path = VertexRagDataServiceClient.common_location_path(**expected)
 

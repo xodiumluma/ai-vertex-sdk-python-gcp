@@ -47,6 +47,7 @@ from google.api_core import operation
 from google.api_core import operation_async  # type: ignore
 from google.api_core import operations_v1
 from google.api_core import path_template
+from google.api_core import retry as retries
 from google.auth import credentials as ga_credentials
 from google.auth.exceptions import MutualTLSChannelError
 from google.cloud.aiplatform_v1beta1.services.endpoint_service import (
@@ -67,6 +68,7 @@ from google.cloud.aiplatform_v1beta1.types import explanation_metadata
 from google.cloud.aiplatform_v1beta1.types import io
 from google.cloud.aiplatform_v1beta1.types import machine_resources
 from google.cloud.aiplatform_v1beta1.types import operation as gca_operation
+from google.cloud.aiplatform_v1beta1.types import reservation_affinity
 from google.cloud.aiplatform_v1beta1.types import service_networking
 from google.cloud.location import locations_pb2
 from google.iam.v1 import iam_policy_pb2  # type: ignore
@@ -1280,8 +1282,9 @@ def test_create_endpoint_use_cached_wrapped_rpc():
         # Establish that the underlying gRPC stub method was called.
         assert mock_rpc.call_count == 1
 
-        # Operation methods build a cached wrapper on first rpc call
-        # subsequent calls should use the cached wrapper
+        # Operation methods call wrapper_fn to build a cached
+        # client._transport.operations_client instance on first rpc call.
+        # Subsequent calls should use the cached wrapper
         wrapper_fn.reset_mock()
 
         client.create_endpoint(request)
@@ -1335,31 +1338,28 @@ async def test_create_endpoint_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.create_endpoint
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.create_endpoint(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
-        # Operation methods build a cached wrapper on first rpc call
-        # subsequent calls should use the cached wrapper
+        # Operation methods call wrapper_fn to build a cached
+        # client._transport.operations_client instance on first rpc call.
+        # Subsequent calls should use the cached wrapper
         wrapper_fn.reset_mock()
 
         await client.create_endpoint(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -1589,6 +1589,10 @@ def test_get_endpoint(request_type, transport: str = "grpc"):
             network="network_value",
             enable_private_service_connect=True,
             model_deployment_monitoring_job="model_deployment_monitoring_job_value",
+            dedicated_endpoint_enabled=True,
+            dedicated_endpoint_dns="dedicated_endpoint_dns_value",
+            satisfies_pzs=True,
+            satisfies_pzi=True,
         )
         response = client.get_endpoint(request)
 
@@ -1610,6 +1614,10 @@ def test_get_endpoint(request_type, transport: str = "grpc"):
         response.model_deployment_monitoring_job
         == "model_deployment_monitoring_job_value"
     )
+    assert response.dedicated_endpoint_enabled is True
+    assert response.dedicated_endpoint_dns == "dedicated_endpoint_dns_value"
+    assert response.satisfies_pzs is True
+    assert response.satisfies_pzi is True
 
 
 def test_get_endpoint_empty_call():
@@ -1715,6 +1723,10 @@ async def test_get_endpoint_empty_call_async():
                 network="network_value",
                 enable_private_service_connect=True,
                 model_deployment_monitoring_job="model_deployment_monitoring_job_value",
+                dedicated_endpoint_enabled=True,
+                dedicated_endpoint_dns="dedicated_endpoint_dns_value",
+                satisfies_pzs=True,
+                satisfies_pzi=True,
             )
         )
         response = await client.get_endpoint()
@@ -1746,27 +1758,23 @@ async def test_get_endpoint_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.get_endpoint
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.get_endpoint(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.get_endpoint(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -1794,6 +1802,10 @@ async def test_get_endpoint_async(
                 network="network_value",
                 enable_private_service_connect=True,
                 model_deployment_monitoring_job="model_deployment_monitoring_job_value",
+                dedicated_endpoint_enabled=True,
+                dedicated_endpoint_dns="dedicated_endpoint_dns_value",
+                satisfies_pzs=True,
+                satisfies_pzi=True,
             )
         )
         response = await client.get_endpoint(request)
@@ -1816,6 +1828,10 @@ async def test_get_endpoint_async(
         response.model_deployment_monitoring_job
         == "model_deployment_monitoring_job_value"
     )
+    assert response.dedicated_endpoint_enabled is True
+    assert response.dedicated_endpoint_dns == "dedicated_endpoint_dns_value"
+    assert response.satisfies_pzs is True
+    assert response.satisfies_pzi is True
 
 
 @pytest.mark.asyncio
@@ -2130,27 +2146,23 @@ async def test_list_endpoints_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.list_endpoints
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.list_endpoints(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.list_endpoints(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -2373,12 +2385,16 @@ def test_list_endpoints_pager(transport_name: str = "grpc"):
         )
 
         expected_metadata = ()
+        retry = retries.Retry()
+        timeout = 5
         expected_metadata = tuple(expected_metadata) + (
             gapic_v1.routing_header.to_grpc_metadata((("parent", ""),)),
         )
-        pager = client.list_endpoints(request={})
+        pager = client.list_endpoints(request={}, retry=retry, timeout=timeout)
 
         assert pager._metadata == expected_metadata
+        assert pager._retry == retry
+        assert pager._timeout == timeout
 
         results = list(pager)
         assert len(results) == 6
@@ -2553,6 +2569,10 @@ def test_update_endpoint(request_type, transport: str = "grpc"):
             network="network_value",
             enable_private_service_connect=True,
             model_deployment_monitoring_job="model_deployment_monitoring_job_value",
+            dedicated_endpoint_enabled=True,
+            dedicated_endpoint_dns="dedicated_endpoint_dns_value",
+            satisfies_pzs=True,
+            satisfies_pzi=True,
         )
         response = client.update_endpoint(request)
 
@@ -2574,6 +2594,10 @@ def test_update_endpoint(request_type, transport: str = "grpc"):
         response.model_deployment_monitoring_job
         == "model_deployment_monitoring_job_value"
     )
+    assert response.dedicated_endpoint_enabled is True
+    assert response.dedicated_endpoint_dns == "dedicated_endpoint_dns_value"
+    assert response.satisfies_pzs is True
+    assert response.satisfies_pzi is True
 
 
 def test_update_endpoint_empty_call():
@@ -2675,6 +2699,10 @@ async def test_update_endpoint_empty_call_async():
                 network="network_value",
                 enable_private_service_connect=True,
                 model_deployment_monitoring_job="model_deployment_monitoring_job_value",
+                dedicated_endpoint_enabled=True,
+                dedicated_endpoint_dns="dedicated_endpoint_dns_value",
+                satisfies_pzs=True,
+                satisfies_pzi=True,
             )
         )
         response = await client.update_endpoint()
@@ -2706,27 +2734,23 @@ async def test_update_endpoint_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.update_endpoint
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.update_endpoint(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.update_endpoint(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -2754,6 +2778,10 @@ async def test_update_endpoint_async(
                 network="network_value",
                 enable_private_service_connect=True,
                 model_deployment_monitoring_job="model_deployment_monitoring_job_value",
+                dedicated_endpoint_enabled=True,
+                dedicated_endpoint_dns="dedicated_endpoint_dns_value",
+                satisfies_pzs=True,
+                satisfies_pzi=True,
             )
         )
         response = await client.update_endpoint(request)
@@ -2776,6 +2804,10 @@ async def test_update_endpoint_async(
         response.model_deployment_monitoring_job
         == "model_deployment_monitoring_job_value"
     )
+    assert response.dedicated_endpoint_enabled is True
+    assert response.dedicated_endpoint_dns == "dedicated_endpoint_dns_value"
+    assert response.satisfies_pzs is True
+    assert response.satisfies_pzi is True
 
 
 @pytest.mark.asyncio
@@ -3044,8 +3076,9 @@ def test_delete_endpoint_use_cached_wrapped_rpc():
         # Establish that the underlying gRPC stub method was called.
         assert mock_rpc.call_count == 1
 
-        # Operation methods build a cached wrapper on first rpc call
-        # subsequent calls should use the cached wrapper
+        # Operation methods call wrapper_fn to build a cached
+        # client._transport.operations_client instance on first rpc call.
+        # Subsequent calls should use the cached wrapper
         wrapper_fn.reset_mock()
 
         client.delete_endpoint(request)
@@ -3099,31 +3132,28 @@ async def test_delete_endpoint_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.delete_endpoint
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.delete_endpoint(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
-        # Operation methods build a cached wrapper on first rpc call
-        # subsequent calls should use the cached wrapper
+        # Operation methods call wrapper_fn to build a cached
+        # client._transport.operations_client instance on first rpc call.
+        # Subsequent calls should use the cached wrapper
         wrapper_fn.reset_mock()
 
         await client.delete_endpoint(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -3413,8 +3443,9 @@ def test_deploy_model_use_cached_wrapped_rpc():
         # Establish that the underlying gRPC stub method was called.
         assert mock_rpc.call_count == 1
 
-        # Operation methods build a cached wrapper on first rpc call
-        # subsequent calls should use the cached wrapper
+        # Operation methods call wrapper_fn to build a cached
+        # client._transport.operations_client instance on first rpc call.
+        # Subsequent calls should use the cached wrapper
         wrapper_fn.reset_mock()
 
         client.deploy_model(request)
@@ -3468,31 +3499,28 @@ async def test_deploy_model_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.deploy_model
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.deploy_model(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
-        # Operation methods build a cached wrapper on first rpc call
-        # subsequent calls should use the cached wrapper
+        # Operation methods call wrapper_fn to build a cached
+        # client._transport.operations_client instance on first rpc call.
+        # Subsequent calls should use the cached wrapper
         wrapper_fn.reset_mock()
 
         await client.deploy_model(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -3840,8 +3868,9 @@ def test_undeploy_model_use_cached_wrapped_rpc():
         # Establish that the underlying gRPC stub method was called.
         assert mock_rpc.call_count == 1
 
-        # Operation methods build a cached wrapper on first rpc call
-        # subsequent calls should use the cached wrapper
+        # Operation methods call wrapper_fn to build a cached
+        # client._transport.operations_client instance on first rpc call.
+        # Subsequent calls should use the cached wrapper
         wrapper_fn.reset_mock()
 
         client.undeploy_model(request)
@@ -3895,31 +3924,28 @@ async def test_undeploy_model_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.undeploy_model
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.undeploy_model(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
-        # Operation methods build a cached wrapper on first rpc call
-        # subsequent calls should use the cached wrapper
+        # Operation methods call wrapper_fn to build a cached
+        # client._transport.operations_client instance on first rpc call.
+        # Subsequent calls should use the cached wrapper
         wrapper_fn.reset_mock()
 
         await client.undeploy_model(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -4240,8 +4266,9 @@ def test_mutate_deployed_model_use_cached_wrapped_rpc():
         # Establish that the underlying gRPC stub method was called.
         assert mock_rpc.call_count == 1
 
-        # Operation methods build a cached wrapper on first rpc call
-        # subsequent calls should use the cached wrapper
+        # Operation methods call wrapper_fn to build a cached
+        # client._transport.operations_client instance on first rpc call.
+        # Subsequent calls should use the cached wrapper
         wrapper_fn.reset_mock()
 
         client.mutate_deployed_model(request)
@@ -4297,31 +4324,28 @@ async def test_mutate_deployed_model_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.mutate_deployed_model
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.mutate_deployed_model(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
-        # Operation methods build a cached wrapper on first rpc call
-        # subsequent calls should use the cached wrapper
+        # Operation methods call wrapper_fn to build a cached
+        # client._transport.operations_client instance on first rpc call.
+        # Subsequent calls should use the cached wrapper
         wrapper_fn.reset_mock()
 
         await client.mutate_deployed_model(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -4597,12 +4621,18 @@ def test_create_endpoint_rest(request_type):
                         "accelerator_type": 1,
                         "accelerator_count": 1805,
                         "tpu_topology": "tpu_topology_value",
+                        "reservation_affinity": {
+                            "reservation_affinity_type": 1,
+                            "key": "key_value",
+                            "values": ["values_value1", "values_value2"],
+                        },
                     },
                     "min_replica_count": 1803,
                     "max_replica_count": 1805,
                     "autoscaling_metric_specs": [
                         {"metric_name": "metric_name_value", "target": 647}
                     ],
+                    "spot": True,
                 },
                 "automatic_resources": {
                     "min_replica_count": 1803,
@@ -4688,6 +4718,7 @@ def test_create_endpoint_rest(request_type):
                 "project_allowlist_value1",
                 "project_allowlist_value2",
             ],
+            "service_attachment": "service_attachment_value",
         },
         "model_deployment_monitoring_job": "model_deployment_monitoring_job_value",
         "predict_request_response_logging_config": {
@@ -4695,6 +4726,10 @@ def test_create_endpoint_rest(request_type):
             "sampling_rate": 0.13820000000000002,
             "bigquery_destination": {"output_uri": "output_uri_value"},
         },
+        "dedicated_endpoint_enabled": True,
+        "dedicated_endpoint_dns": "dedicated_endpoint_dns_value",
+        "satisfies_pzs": True,
+        "satisfies_pzi": True,
     }
     # The version of a generated dependency at test runtime may differ from the version used during generation.
     # Delete any fields which are not present in the current runtime dependency
@@ -4892,7 +4927,7 @@ def test_create_endpoint_rest_required_fields(
 
             response = client.create_endpoint(request)
 
-            expected_params = []
+            expected_params = [("$alt", "json;enum-encoding=int")]
             actual_params = req.call_args.kwargs["params"]
             assert expected_params == actual_params
 
@@ -5090,6 +5125,10 @@ def test_get_endpoint_rest(request_type):
             network="network_value",
             enable_private_service_connect=True,
             model_deployment_monitoring_job="model_deployment_monitoring_job_value",
+            dedicated_endpoint_enabled=True,
+            dedicated_endpoint_dns="dedicated_endpoint_dns_value",
+            satisfies_pzs=True,
+            satisfies_pzi=True,
         )
 
         # Wrap the value into a proper Response obj
@@ -5115,6 +5154,10 @@ def test_get_endpoint_rest(request_type):
         response.model_deployment_monitoring_job
         == "model_deployment_monitoring_job_value"
     )
+    assert response.dedicated_endpoint_enabled is True
+    assert response.dedicated_endpoint_dns == "dedicated_endpoint_dns_value"
+    assert response.satisfies_pzs is True
+    assert response.satisfies_pzi is True
 
 
 def test_get_endpoint_rest_use_cached_wrapped_rpc():
@@ -5222,7 +5265,7 @@ def test_get_endpoint_rest_required_fields(
 
             response = client.get_endpoint(request)
 
-            expected_params = []
+            expected_params = [("$alt", "json;enum-encoding=int")]
             actual_params = req.call_args.kwargs["params"]
             assert expected_params == actual_params
 
@@ -5534,7 +5577,7 @@ def test_list_endpoints_rest_required_fields(
 
             response = client.list_endpoints(request)
 
-            expected_params = []
+            expected_params = [("$alt", "json;enum-encoding=int")]
             actual_params = req.call_args.kwargs["params"]
             assert expected_params == actual_params
 
@@ -5788,12 +5831,18 @@ def test_update_endpoint_rest(request_type):
                         "accelerator_type": 1,
                         "accelerator_count": 1805,
                         "tpu_topology": "tpu_topology_value",
+                        "reservation_affinity": {
+                            "reservation_affinity_type": 1,
+                            "key": "key_value",
+                            "values": ["values_value1", "values_value2"],
+                        },
                     },
                     "min_replica_count": 1803,
                     "max_replica_count": 1805,
                     "autoscaling_metric_specs": [
                         {"metric_name": "metric_name_value", "target": 647}
                     ],
+                    "spot": True,
                 },
                 "automatic_resources": {
                     "min_replica_count": 1803,
@@ -5879,6 +5928,7 @@ def test_update_endpoint_rest(request_type):
                 "project_allowlist_value1",
                 "project_allowlist_value2",
             ],
+            "service_attachment": "service_attachment_value",
         },
         "model_deployment_monitoring_job": "model_deployment_monitoring_job_value",
         "predict_request_response_logging_config": {
@@ -5886,6 +5936,10 @@ def test_update_endpoint_rest(request_type):
             "sampling_rate": 0.13820000000000002,
             "bigquery_destination": {"output_uri": "output_uri_value"},
         },
+        "dedicated_endpoint_enabled": True,
+        "dedicated_endpoint_dns": "dedicated_endpoint_dns_value",
+        "satisfies_pzs": True,
+        "satisfies_pzi": True,
     }
     # The version of a generated dependency at test runtime may differ from the version used during generation.
     # Delete any fields which are not present in the current runtime dependency
@@ -5967,6 +6021,10 @@ def test_update_endpoint_rest(request_type):
             network="network_value",
             enable_private_service_connect=True,
             model_deployment_monitoring_job="model_deployment_monitoring_job_value",
+            dedicated_endpoint_enabled=True,
+            dedicated_endpoint_dns="dedicated_endpoint_dns_value",
+            satisfies_pzs=True,
+            satisfies_pzi=True,
         )
 
         # Wrap the value into a proper Response obj
@@ -5992,6 +6050,10 @@ def test_update_endpoint_rest(request_type):
         response.model_deployment_monitoring_job
         == "model_deployment_monitoring_job_value"
     )
+    assert response.dedicated_endpoint_enabled is True
+    assert response.dedicated_endpoint_dns == "dedicated_endpoint_dns_value"
+    assert response.satisfies_pzs is True
+    assert response.satisfies_pzi is True
 
 
 def test_update_endpoint_rest_use_cached_wrapped_rpc():
@@ -6097,7 +6159,7 @@ def test_update_endpoint_rest_required_fields(
 
             response = client.update_endpoint(request)
 
-            expected_params = []
+            expected_params = [("$alt", "json;enum-encoding=int")]
             actual_params = req.call_args.kwargs["params"]
             assert expected_params == actual_params
 
@@ -6410,7 +6472,7 @@ def test_delete_endpoint_rest_required_fields(
 
             response = client.delete_endpoint(request)
 
-            expected_params = []
+            expected_params = [("$alt", "json;enum-encoding=int")]
             actual_params = req.call_args.kwargs["params"]
             assert expected_params == actual_params
 
@@ -6712,7 +6774,7 @@ def test_deploy_model_rest_required_fields(
 
             response = client.deploy_model(request)
 
-            expected_params = []
+            expected_params = [("$alt", "json;enum-encoding=int")]
             actual_params = req.call_args.kwargs["params"]
             assert expected_params == actual_params
 
@@ -7042,7 +7104,7 @@ def test_undeploy_model_rest_required_fields(
 
             response = client.undeploy_model(request)
 
-            expected_params = []
+            expected_params = [("$alt", "json;enum-encoding=int")]
             actual_params = req.call_args.kwargs["params"]
             assert expected_params == actual_params
 
@@ -7361,7 +7423,7 @@ def test_mutate_deployed_model_rest_required_fields(
 
             response = client.mutate_deployed_model(request)
 
-            expected_params = []
+            expected_params = [("$alt", "json;enum-encoding=int")]
             actual_params = req.call_args.kwargs["params"]
             assert expected_params == actual_params
 
@@ -8300,8 +8362,36 @@ def test_parse_network_path():
     assert expected == actual
 
 
+def test_reservation_path():
+    project_id_or_number = "oyster"
+    zone = "nudibranch"
+    reservation_name = "cuttlefish"
+    expected = "projects/{project_id_or_number}/zones/{zone}/reservations/{reservation_name}".format(
+        project_id_or_number=project_id_or_number,
+        zone=zone,
+        reservation_name=reservation_name,
+    )
+    actual = EndpointServiceClient.reservation_path(
+        project_id_or_number, zone, reservation_name
+    )
+    assert expected == actual
+
+
+def test_parse_reservation_path():
+    expected = {
+        "project_id_or_number": "mussel",
+        "zone": "winkle",
+        "reservation_name": "nautilus",
+    }
+    path = EndpointServiceClient.reservation_path(**expected)
+
+    # Check that the path construction is reversible.
+    actual = EndpointServiceClient.parse_reservation_path(path)
+    assert expected == actual
+
+
 def test_common_billing_account_path():
-    billing_account = "oyster"
+    billing_account = "scallop"
     expected = "billingAccounts/{billing_account}".format(
         billing_account=billing_account,
     )
@@ -8311,7 +8401,7 @@ def test_common_billing_account_path():
 
 def test_parse_common_billing_account_path():
     expected = {
-        "billing_account": "nudibranch",
+        "billing_account": "abalone",
     }
     path = EndpointServiceClient.common_billing_account_path(**expected)
 
@@ -8321,7 +8411,7 @@ def test_parse_common_billing_account_path():
 
 
 def test_common_folder_path():
-    folder = "cuttlefish"
+    folder = "squid"
     expected = "folders/{folder}".format(
         folder=folder,
     )
@@ -8331,7 +8421,7 @@ def test_common_folder_path():
 
 def test_parse_common_folder_path():
     expected = {
-        "folder": "mussel",
+        "folder": "clam",
     }
     path = EndpointServiceClient.common_folder_path(**expected)
 
@@ -8341,7 +8431,7 @@ def test_parse_common_folder_path():
 
 
 def test_common_organization_path():
-    organization = "winkle"
+    organization = "whelk"
     expected = "organizations/{organization}".format(
         organization=organization,
     )
@@ -8351,7 +8441,7 @@ def test_common_organization_path():
 
 def test_parse_common_organization_path():
     expected = {
-        "organization": "nautilus",
+        "organization": "octopus",
     }
     path = EndpointServiceClient.common_organization_path(**expected)
 
@@ -8361,7 +8451,7 @@ def test_parse_common_organization_path():
 
 
 def test_common_project_path():
-    project = "scallop"
+    project = "oyster"
     expected = "projects/{project}".format(
         project=project,
     )
@@ -8371,7 +8461,7 @@ def test_common_project_path():
 
 def test_parse_common_project_path():
     expected = {
-        "project": "abalone",
+        "project": "nudibranch",
     }
     path = EndpointServiceClient.common_project_path(**expected)
 
@@ -8381,8 +8471,8 @@ def test_parse_common_project_path():
 
 
 def test_common_location_path():
-    project = "squid"
-    location = "clam"
+    project = "cuttlefish"
+    location = "mussel"
     expected = "projects/{project}/locations/{location}".format(
         project=project,
         location=location,
@@ -8393,8 +8483,8 @@ def test_common_location_path():
 
 def test_parse_common_location_path():
     expected = {
-        "project": "whelk",
-        "location": "octopus",
+        "project": "winkle",
+        "location": "nautilus",
     }
     path = EndpointServiceClient.common_location_path(**expected)
 

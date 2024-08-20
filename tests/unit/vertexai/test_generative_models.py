@@ -213,35 +213,10 @@ def mock_generate_content(
     if has_retrieval and (not has_rag_retrieval) and request.contents[0].parts[0].text:
         grounding_metadata = gapic_content_types.GroundingMetadata(
             web_search_queries=[request.contents[0].parts[0].text],
-            grounding_attributions=[
-                gapic_content_types.GroundingAttribution(
-                    segment=gapic_content_types.Segment(
-                        start_index=0,
-                        end_index=67,
-                    ),
-                    confidence_score=0.69857746,
-                    web=gapic_content_types.GroundingAttribution.Web(
-                        uri="https://math.ucr.edu/home/baez/physics/General/BlueSky/blue_sky.html",
-                        title="Why is the sky blue? - UCR Math",
-                    ),
-                ),
-            ],
         )
     elif has_rag_retrieval and request.contents[0].parts[0].text:
         grounding_metadata = gapic_content_types.GroundingMetadata(
             retrieval_queries=[request.contents[0].parts[0].text],
-            grounding_attributions=[
-                gapic_content_types.GroundingAttribution(
-                    retrieved_context=gapic_content_types.GroundingAttribution.RetrievedContext(
-                        uri="gs://my-bucket/my-file.pdf",
-                    ),
-                    segment=gapic_content_types.Segment(
-                        start_index=0,
-                        end_index=67,
-                    ),
-                    confidence_score=0.69857746,
-                ),
-            ],
         )
     else:
         grounding_metadata = None
@@ -461,6 +436,37 @@ class TestGenerativeModels:
 
         model = preview_generative_models.GenerativeModel.from_cached_content(
             cached_content=cached_content
+        )
+
+        assert (
+            model._prediction_resource_name
+            == project_location_prefix
+            + "publishers/google/models/"
+            + "gemini-pro-from-mock-get-cached-content"
+        )
+        assert (
+            model._cached_content.model_name
+            == "gemini-pro-from-mock-get-cached-content"
+        )
+        assert (
+            model._cached_content.resource_name
+            == f"projects/{_TEST_PROJECT}/locations/{_TEST_LOCATION}/"
+            "cachedContents/cached-content-id-in-from-cached-content-test"
+        )
+        assert (
+            model._cached_content.name
+            == "cached-content-id-in-from-cached-content-test"
+        )
+
+    def test_generative_model_from_cached_content_with_resource_name(
+        self, mock_get_cached_content_fixture
+    ):
+        project_location_prefix = (
+            f"projects/{_TEST_PROJECT}/locations/{_TEST_LOCATION}/"
+        )
+
+        model = preview_generative_models.GenerativeModel.from_cached_content(
+            cached_content="cached-content-id-in-from-cached-content-test"
         )
 
         assert (
@@ -985,9 +991,7 @@ class TestGenerativeModels:
         model = preview_generative_models.GenerativeModel("gemini-pro")
         google_search_retriever_tool = (
             preview_generative_models.Tool.from_google_search_retrieval(
-                preview_generative_models.grounding.GoogleSearchRetrieval(
-                    disable_attribution=False
-                )
+                preview_generative_models.grounding.GoogleSearchRetrieval()
             )
         )
         response = model.generate_content(

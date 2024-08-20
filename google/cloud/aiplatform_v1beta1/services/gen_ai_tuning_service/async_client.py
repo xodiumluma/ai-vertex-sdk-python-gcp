@@ -14,7 +14,6 @@
 # limitations under the License.
 #
 from collections import OrderedDict
-import functools
 import re
 from typing import (
     Dict,
@@ -79,6 +78,10 @@ class GenAiTuningServiceAsyncClient:
     parse_endpoint_path = staticmethod(GenAiTuningServiceClient.parse_endpoint_path)
     model_path = staticmethod(GenAiTuningServiceClient.model_path)
     parse_model_path = staticmethod(GenAiTuningServiceClient.parse_model_path)
+    pipeline_job_path = staticmethod(GenAiTuningServiceClient.pipeline_job_path)
+    parse_pipeline_job_path = staticmethod(
+        GenAiTuningServiceClient.parse_pipeline_job_path
+    )
     tuning_job_path = staticmethod(GenAiTuningServiceClient.tuning_job_path)
     parse_tuning_job_path = staticmethod(GenAiTuningServiceClient.parse_tuning_job_path)
     common_billing_account_path = staticmethod(
@@ -203,10 +206,7 @@ class GenAiTuningServiceAsyncClient:
         """
         return self._client._universe_domain
 
-    get_transport_class = functools.partial(
-        type(GenAiTuningServiceClient).get_transport_class,
-        type(GenAiTuningServiceClient),
-    )
+    get_transport_class = GenAiTuningServiceClient.get_transport_class
 
     def __init__(
         self,
@@ -235,9 +235,6 @@ class GenAiTuningServiceAsyncClient:
                 If a Callable is given, it will be called with the same set of initialization
                 arguments as used in the GenAiTuningServiceTransport constructor.
                 If set to None, a transport is chosen automatically.
-                NOTE: "rest" transport functionality is currently in a
-                beta state (preview). We welcome your feedback via an
-                issue in this library's source repository.
             client_options (Optional[Union[google.api_core.client_options.ClientOptions, dict]]):
                 Custom options for the client.
 
@@ -626,6 +623,8 @@ class GenAiTuningServiceAsyncClient:
             method=rpc,
             request=request,
             response=response,
+            retry=retry,
+            timeout=timeout,
             metadata=metadata,
         )
 

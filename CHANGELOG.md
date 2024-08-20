@@ -1,5 +1,81 @@
 # Changelog
 
+## [1.62.0](https://github.com/googleapis/python-aiplatform/compare/v1.61.0...v1.62.0) (2024-08-13)
+
+
+### Features
+
+* Add metadata to evaluation result. ([375095e](https://github.com/googleapis/python-aiplatform/commit/375095e72cc4f43611710372a1e36753a891a710))
+* Add Prompt class for multimodal prompt templating ([1bdc235](https://github.com/googleapis/python-aiplatform/commit/1bdc235ea64f8d63ce9d60d88cb873ee341d3ff9))
+* Add support for query method in Vertex AI Extension SDK ([0008735](https://github.com/googleapis/python-aiplatform/commit/0008735968606a716add88072cff76f2fc552d7b))
+* Add support for reservation affinity in custom training jobs. ([802609b](https://github.com/googleapis/python-aiplatform/commit/802609b1f5e5d8d41a77dafb5b1a2dbf01f2bd30))
+* Add support for strategy in custom training jobs. ([a076191](https://github.com/googleapis/python-aiplatform/commit/a076191b8726363e1f7c47ef8343eb86cebf9918))
+* Adding spot, reservation_affinity to Vertex SDK ([3e785bd](https://github.com/googleapis/python-aiplatform/commit/3e785bd9c9d3d11197ef930f563ee96231a67d84))
+* Support api keys in initializer and create_client ([7404f67](https://github.com/googleapis/python-aiplatform/commit/7404f679246e41e0009ec2d49f05d669eb357f71))
+* Support creating optimized online store with private service connect ([659ba3f](https://github.com/googleapis/python-aiplatform/commit/659ba3f287f9aa78840d4b9b9ca216002d5f1e6a))
+* Support disable Cloud logging in Ray on Vertex ([accaa97](https://github.com/googleapis/python-aiplatform/commit/accaa9750d98b7a37b08da3bd2058d9cdd03bd5c))
+* Support PSC-Interface in Ray on Vertex ([accaa97](https://github.com/googleapis/python-aiplatform/commit/accaa9750d98b7a37b08da3bd2058d9cdd03bd5c))
+
+
+### Bug Fixes
+
+* Added credentials, project, and location on PipelineJobSchedule init ([281c171](https://github.com/googleapis/python-aiplatform/commit/281c1710afc6cac49c02d926bee7a6c43b6ef851))
+* Avoid breakage of langchain from orjson 3.10.7 ([c990f73](https://github.com/googleapis/python-aiplatform/commit/c990f73845f38e58ba2dddb372ad2f84d4a05479))
+* Deprecate disable_attribution in GoogleSearchRetrieval. ([c68d559](https://github.com/googleapis/python-aiplatform/commit/c68d559b9d0fd7288b6775f57d05f474f5f7920a))
+
+
+### Documentation
+
+* Update the docstring for compute_tokens method. ([849e8d4](https://github.com/googleapis/python-aiplatform/commit/849e8d409e4838cad0a020231b806b0c9ef587ce))
+
+## [1.61.0](https://github.com/googleapis/python-aiplatform/compare/v1.60.0...v1.61.0) (2024-08-05)
+
+
+### Features
+
+* Add a warning message for scheduled deprecation of Coherence metric class ([7f238fb](https://github.com/googleapis/python-aiplatform/commit/7f238fb3cebc44893b4e6959a77743cc4d96138e))
+* Add deprecation messages for all model-based metric classes ([71c0fd3](https://github.com/googleapis/python-aiplatform/commit/71c0fd397139a95b6045f898e906ce11b2e7e8ce))
+* Add support for task type (CODE_RETRIEVAL_QUERY) through get_embeddings. ([f2ce1e4](https://github.com/googleapis/python-aiplatform/commit/f2ce1e4caea9f344e39fc3232f697b1a6ea4f99a))
+* Add system_instruction to LangchainAgent template. ([c71c3dd](https://github.com/googleapis/python-aiplatform/commit/c71c3ddbfeaa577dfce683b3299d94e77d1c4895))
+* Adding Slack and Jira data connector for RAG to SDK ([d92e7c9](https://github.com/googleapis/python-aiplatform/commit/d92e7c91d280dd417d2c2a2cf5abc36592888593))
+* Allow protobuf 5.x ([ce9cd5d](https://github.com/googleapis/python-aiplatform/commit/ce9cd5def14597822c1d071e438cf63b6d4ba3ca))
+* LVM - Release `ImageGenerationModel` to GA ([718c199](https://github.com/googleapis/python-aiplatform/commit/718c1997778310b6898344b2e5a34513e7a82e5f))
+* Support "update" for reasoning engine. ([b73ef3e](https://github.com/googleapis/python-aiplatform/commit/b73ef3eaa2d88dbc8071e3a4f0c7da934683fc2a))
+* Update Rapid Evaluation Service QPS. Add a customizable evaluation service QPS parameter. ([9ee9289](https://github.com/googleapis/python-aiplatform/commit/9ee9289fbe5face719515e453d4f81648b44e7b1))
+
+
+### Documentation
+
+* Change init sample to use vertexai ([829e0f6](https://github.com/googleapis/python-aiplatform/commit/829e0f6fd286cf2de2ac307a836305766473faef))
+* Make small fixes to file import documentation ([f7d65c3](https://github.com/googleapis/python-aiplatform/commit/f7d65c32948c54bcf3a6927639f2173b556bb310))
+
+## [1.60.0](https://github.com/googleapis/python-aiplatform/compare/v1.59.0...v1.60.0) (2024-07-24)
+
+
+### Features
+
+* Add preflight validations to PipelineJob submit and run methods. ([c5a3535](https://github.com/googleapis/python-aiplatform/commit/c5a35354485a577dd5477449bc4bdcd7866a8df4))
+* Add support for langchain v0.2+ package versions in default installation ([259b638](https://github.com/googleapis/python-aiplatform/commit/259b638300054e13b2dfe1d3f32d7126bbb18b15))
+* GenAI - Added tokenization support via `GenerativeModel.compute_tokens` ([cfe0cc6](https://github.com/googleapis/python-aiplatform/commit/cfe0cc62cbf8dc12b4b021377ddd613d1072fe95))
+* GenAI - ContextCaching - allow from_cached_content to take the cached_content resource name ([8f53902](https://github.com/googleapis/python-aiplatform/commit/8f53902b933f3abf0c9a222f45c2fa7ada727505))
+* Make count_tokens generally-available at TextEmbeddingModel. ([efb8413](https://github.com/googleapis/python-aiplatform/commit/efb84134094ab87d6a2fac48a1f2f1b2199c1818))
+
+
+### Bug Fixes
+
+* Avoid throw error when Part.text is empty in modality content checks ([bbd4a49](https://github.com/googleapis/python-aiplatform/commit/bbd4a49d398052ba2c20e09f8f052e6f766d8fca))
+* Correct logit_bias type annotation to accept keys as strings ([2676d25](https://github.com/googleapis/python-aiplatform/commit/2676d25e62d1bda68b0fbef274d0e669a6670415))
+* Create FV embedding dimensions sample - dimensions should be an int ([2aa221e](https://github.com/googleapis/python-aiplatform/commit/2aa221ec994fea63bd73e2cfe760a314b990e4b0))
+* Fix the sync option for Model Monitor job creation ([22151e2](https://github.com/googleapis/python-aiplatform/commit/22151e29e752dd8f27188046f8c8866c004ca196))
+* Include DeploymentResourcePool class in aiplatform top-level sdk module ([ecc4f09](https://github.com/googleapis/python-aiplatform/commit/ecc4f09054b3e314b51ebf622b7241a5ab4ff072))
+* Overriding the current TracerProvider when enabling tracing ([1476c10](https://github.com/googleapis/python-aiplatform/commit/1476c10f2fd91c02cd98799564a33ede742bc6e0))
+* Pass the project ID from vertexai.init to CloudTraceSpanExporter when enable_tracing=True for LangchainAgent ([3ec043e](https://github.com/googleapis/python-aiplatform/commit/3ec043eefb053739f767d5199b1941bbc3c49120))
+
+
+### Documentation
+
+* GenAI - Update README.md for Vertex Generative AI SDK for Python to add subsections to the right nav. ([42af742](https://github.com/googleapis/python-aiplatform/commit/42af742d808abdca56b84b3381388a36c8454f1b))
+
 ## [1.59.0](https://github.com/googleapis/python-aiplatform/compare/v1.58.0...v1.59.0) (2024-07-09)
 
 

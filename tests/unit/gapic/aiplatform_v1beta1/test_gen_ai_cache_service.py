@@ -43,6 +43,7 @@ from google.api_core import gapic_v1
 from google.api_core import grpc_helpers
 from google.api_core import grpc_helpers_async
 from google.api_core import path_template
+from google.api_core import retry as retries
 from google.auth import credentials as ga_credentials
 from google.auth.exceptions import MutualTLSChannelError
 from google.cloud.aiplatform_v1beta1.services.gen_ai_cache_service import (
@@ -1199,6 +1200,7 @@ def test_create_cached_content(request_type, transport: str = "grpc"):
         # Designate an appropriate return value for the call.
         call.return_value = gca_cached_content.CachedContent(
             name="name_value",
+            display_name="display_name_value",
             model="model_value",
         )
         response = client.create_cached_content(request)
@@ -1212,6 +1214,7 @@ def test_create_cached_content(request_type, transport: str = "grpc"):
     # Establish that the response is the type that we expect.
     assert isinstance(response, gca_cached_content.CachedContent)
     assert response.name == "name_value"
+    assert response.display_name == "display_name_value"
     assert response.model == "model_value"
 
 
@@ -1323,6 +1326,7 @@ async def test_create_cached_content_empty_call_async():
         call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
             gca_cached_content.CachedContent(
                 name="name_value",
+                display_name="display_name_value",
                 model="model_value",
             )
         )
@@ -1355,27 +1359,23 @@ async def test_create_cached_content_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.create_cached_content
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.create_cached_content(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.create_cached_content(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -1400,6 +1400,7 @@ async def test_create_cached_content_async(
         call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
             gca_cached_content.CachedContent(
                 name="name_value",
+                display_name="display_name_value",
                 model="model_value",
             )
         )
@@ -1414,6 +1415,7 @@ async def test_create_cached_content_async(
     # Establish that the response is the type that we expect.
     assert isinstance(response, gca_cached_content.CachedContent)
     assert response.name == "name_value"
+    assert response.display_name == "display_name_value"
     assert response.model == "model_value"
 
 
@@ -1619,6 +1621,7 @@ def test_get_cached_content(request_type, transport: str = "grpc"):
         # Designate an appropriate return value for the call.
         call.return_value = cached_content.CachedContent(
             name="name_value",
+            display_name="display_name_value",
             model="model_value",
         )
         response = client.get_cached_content(request)
@@ -1632,6 +1635,7 @@ def test_get_cached_content(request_type, transport: str = "grpc"):
     # Establish that the response is the type that we expect.
     assert isinstance(response, cached_content.CachedContent)
     assert response.name == "name_value"
+    assert response.display_name == "display_name_value"
     assert response.model == "model_value"
 
 
@@ -1742,6 +1746,7 @@ async def test_get_cached_content_empty_call_async():
         call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
             cached_content.CachedContent(
                 name="name_value",
+                display_name="display_name_value",
                 model="model_value",
             )
         )
@@ -1774,27 +1779,23 @@ async def test_get_cached_content_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.get_cached_content
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.get_cached_content(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.get_cached_content(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -1819,6 +1820,7 @@ async def test_get_cached_content_async(
         call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
             cached_content.CachedContent(
                 name="name_value",
+                display_name="display_name_value",
                 model="model_value",
             )
         )
@@ -1833,6 +1835,7 @@ async def test_get_cached_content_async(
     # Establish that the response is the type that we expect.
     assert isinstance(response, cached_content.CachedContent)
     assert response.name == "name_value"
+    assert response.display_name == "display_name_value"
     assert response.model == "model_value"
 
 
@@ -2016,6 +2019,7 @@ def test_update_cached_content(request_type, transport: str = "grpc"):
         # Designate an appropriate return value for the call.
         call.return_value = gca_cached_content.CachedContent(
             name="name_value",
+            display_name="display_name_value",
             model="model_value",
         )
         response = client.update_cached_content(request)
@@ -2029,6 +2033,7 @@ def test_update_cached_content(request_type, transport: str = "grpc"):
     # Establish that the response is the type that we expect.
     assert isinstance(response, gca_cached_content.CachedContent)
     assert response.name == "name_value"
+    assert response.display_name == "display_name_value"
     assert response.model == "model_value"
 
 
@@ -2136,6 +2141,7 @@ async def test_update_cached_content_empty_call_async():
         call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
             gca_cached_content.CachedContent(
                 name="name_value",
+                display_name="display_name_value",
                 model="model_value",
             )
         )
@@ -2168,27 +2174,23 @@ async def test_update_cached_content_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.update_cached_content
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.update_cached_content(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.update_cached_content(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -2213,6 +2215,7 @@ async def test_update_cached_content_async(
         call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
             gca_cached_content.CachedContent(
                 name="name_value",
+                display_name="display_name_value",
                 model="model_value",
             )
         )
@@ -2227,6 +2230,7 @@ async def test_update_cached_content_async(
     # Establish that the response is the type that we expect.
     assert isinstance(response, gca_cached_content.CachedContent)
     assert response.name == "name_value"
+    assert response.display_name == "display_name_value"
     assert response.model == "model_value"
 
 
@@ -2578,27 +2582,23 @@ async def test_delete_cached_content_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.delete_cached_content
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.delete_cached_content(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.delete_cached_content(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -2963,27 +2963,23 @@ async def test_list_cached_contents_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.list_cached_contents
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.list_cached_contents(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.list_cached_contents(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -3219,12 +3215,16 @@ def test_list_cached_contents_pager(transport_name: str = "grpc"):
         )
 
         expected_metadata = ()
+        retry = retries.Retry()
+        timeout = 5
         expected_metadata = tuple(expected_metadata) + (
             gapic_v1.routing_header.to_grpc_metadata((("parent", ""),)),
         )
-        pager = client.list_cached_contents(request={})
+        pager = client.list_cached_contents(request={}, retry=retry, timeout=timeout)
 
         assert pager._metadata == expected_metadata
+        assert pager._retry == retry
+        assert pager._timeout == timeout
 
         results = list(pager)
         assert len(results) == 6
@@ -3396,6 +3396,7 @@ def test_create_cached_content_rest(request_type):
         "expire_time": {"seconds": 751, "nanos": 543},
         "ttl": {"seconds": 751, "nanos": 543},
         "name": "name_value",
+        "display_name": "display_name_value",
         "model": "model_value",
         "system_instruction": {
             "role": "role_value",
@@ -3473,7 +3474,7 @@ def test_create_cached_content_rest(request_type):
                     },
                     "disable_attribution": True,
                 },
-                "google_search_retrieval": {"disable_attribution": True},
+                "google_search_retrieval": {},
             }
         ],
         "tool_config": {
@@ -3564,6 +3565,7 @@ def test_create_cached_content_rest(request_type):
         # Designate an appropriate value for the returned response.
         return_value = gca_cached_content.CachedContent(
             name="name_value",
+            display_name="display_name_value",
             model="model_value",
         )
 
@@ -3581,6 +3583,7 @@ def test_create_cached_content_rest(request_type):
     # Establish that the response is the type that we expect.
     assert isinstance(response, gca_cached_content.CachedContent)
     assert response.name == "name_value"
+    assert response.display_name == "display_name_value"
     assert response.model == "model_value"
 
 
@@ -3695,7 +3698,7 @@ def test_create_cached_content_rest_required_fields(
 
             response = client.create_cached_content(request)
 
-            expected_params = []
+            expected_params = [("$alt", "json;enum-encoding=int")]
             actual_params = req.call_args.kwargs["params"]
             assert expected_params == actual_params
 
@@ -3890,6 +3893,7 @@ def test_get_cached_content_rest(request_type):
         # Designate an appropriate value for the returned response.
         return_value = cached_content.CachedContent(
             name="name_value",
+            display_name="display_name_value",
             model="model_value",
         )
 
@@ -3907,6 +3911,7 @@ def test_get_cached_content_rest(request_type):
     # Establish that the response is the type that we expect.
     assert isinstance(response, cached_content.CachedContent)
     assert response.name == "name_value"
+    assert response.display_name == "display_name_value"
     assert response.model == "model_value"
 
 
@@ -4019,7 +4024,7 @@ def test_get_cached_content_rest_required_fields(
 
             response = client.get_cached_content(request)
 
-            expected_params = []
+            expected_params = [("$alt", "json;enum-encoding=int")]
             actual_params = req.call_args.kwargs["params"]
             assert expected_params == actual_params
 
@@ -4202,6 +4207,7 @@ def test_update_cached_content_rest(request_type):
         "expire_time": {"seconds": 751, "nanos": 543},
         "ttl": {"seconds": 751, "nanos": 543},
         "name": "projects/sample1/locations/sample2/cachedContents/sample3",
+        "display_name": "display_name_value",
         "model": "model_value",
         "system_instruction": {
             "role": "role_value",
@@ -4279,7 +4285,7 @@ def test_update_cached_content_rest(request_type):
                     },
                     "disable_attribution": True,
                 },
-                "google_search_retrieval": {"disable_attribution": True},
+                "google_search_retrieval": {},
             }
         ],
         "tool_config": {
@@ -4370,6 +4376,7 @@ def test_update_cached_content_rest(request_type):
         # Designate an appropriate value for the returned response.
         return_value = gca_cached_content.CachedContent(
             name="name_value",
+            display_name="display_name_value",
             model="model_value",
         )
 
@@ -4387,6 +4394,7 @@ def test_update_cached_content_rest(request_type):
     # Establish that the response is the type that we expect.
     assert isinstance(response, gca_cached_content.CachedContent)
     assert response.name == "name_value"
+    assert response.display_name == "display_name_value"
     assert response.model == "model_value"
 
 
@@ -4498,7 +4506,7 @@ def test_update_cached_content_rest_required_fields(
 
             response = client.update_cached_content(request)
 
-            expected_params = []
+            expected_params = [("$alt", "json;enum-encoding=int")]
             actual_params = req.call_args.kwargs["params"]
             assert expected_params == actual_params
 
@@ -4821,7 +4829,7 @@ def test_delete_cached_content_rest_required_fields(
 
             response = client.delete_cached_content(request)
 
-            expected_params = []
+            expected_params = [("$alt", "json;enum-encoding=int")]
             actual_params = req.call_args.kwargs["params"]
             assert expected_params == actual_params
 
@@ -5130,7 +5138,7 @@ def test_list_cached_contents_rest_required_fields(
 
             response = client.list_cached_contents(request)
 
-            expected_params = []
+            expected_params = [("$alt", "json;enum-encoding=int")]
             actual_params = req.call_args.kwargs["params"]
             assert expected_params == actual_params
 

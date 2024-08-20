@@ -248,6 +248,7 @@ _TEST_DASHBOARD_ACCESS_URIS = {"workerpool0-0:8888": "uri"}
 _TEST_PERSISTENT_RESOURCE_ID = (
     test_constants.PersistentResourceConstants._TEST_PERSISTENT_RESOURCE_ID
 )
+_TEST_SPOT_STRATEGY = test_constants.TrainingJobConstants._TEST_SPOT_STRATEGY
 
 _TEST_BASE_CUSTOM_JOB_PROTO = gca_custom_job.CustomJob(
     job_spec=gca_custom_job.CustomJobSpec(),
@@ -302,6 +303,15 @@ def _get_custom_job_proto_with_scheduling(state=None, name=None, version="v1"):
     )
     custom_job_proto.job_spec.scheduling.disable_retries = _TEST_DISABLE_RETRIES
 
+    return custom_job_proto
+
+
+def _get_custom_job_proto_with_spot_strategy(state=None, name=None, version="v1"):
+    custom_job_proto = copy.deepcopy(_TEST_BASE_CUSTOM_JOB_PROTO)
+    custom_job_proto.name = name
+    custom_job_proto.state = state
+
+    custom_job_proto.job_spec.scheduling.strategy = _TEST_SPOT_STRATEGY
     return custom_job_proto
 
 
@@ -727,9 +737,11 @@ def make_training_pipeline(state, add_training_task_metadata=True):
         state=state,
         model_to_upload=gca_model.Model(name=_TEST_MODEL_NAME),
         training_task_inputs={"tensorboard": _TEST_TENSORBOARD_RESOURCE_NAME},
-        training_task_metadata={"backingCustomJob": _TEST_CUSTOM_JOB_RESOURCE_NAME}
-        if add_training_task_metadata
-        else None,
+        training_task_metadata=(
+            {"backingCustomJob": _TEST_CUSTOM_JOB_RESOURCE_NAME}
+            if add_training_task_metadata
+            else None
+        ),
     )
 
 
@@ -741,9 +753,11 @@ def make_training_pipeline_with_version(state, add_training_task_metadata=True):
             name=_TEST_MODEL_NAME, version_id=_TEST_MODEL_VERSION_ID
         ),
         training_task_inputs={"tensorboard": _TEST_TENSORBOARD_RESOURCE_NAME},
-        training_task_metadata={"backingCustomJob": _TEST_CUSTOM_JOB_RESOURCE_NAME}
-        if add_training_task_metadata
-        else None,
+        training_task_metadata=(
+            {"backingCustomJob": _TEST_CUSTOM_JOB_RESOURCE_NAME}
+            if add_training_task_metadata
+            else None
+        ),
     )
 
 
@@ -801,6 +815,21 @@ def make_training_pipeline_with_scheduling(state):
             "timeout": f"{_TEST_TIMEOUT}s",
             "restart_job_on_worker_restart": _TEST_RESTART_JOB_ON_WORKER_RESTART,
             "disable_retries": _TEST_DISABLE_RETRIES,
+        },
+    )
+    if state == gca_pipeline_state.PipelineState.PIPELINE_STATE_RUNNING:
+        training_pipeline.training_task_metadata = {
+            "backingCustomJob": _TEST_CUSTOM_JOB_RESOURCE_NAME
+        }
+    return training_pipeline
+
+
+def make_training_pipeline_with_spot_strategy(state):
+    training_pipeline = gca_training_pipeline.TrainingPipeline(
+        name=_TEST_PIPELINE_RESOURCE_NAME,
+        state=state,
+        training_task_inputs={
+            "scheduling_strategy": _TEST_SPOT_STRATEGY,
         },
     )
     if state == gca_pipeline_state.PipelineState.PIPELINE_STATE_RUNNING:
@@ -953,6 +982,35 @@ def mock_pipeline_service_get_with_scheduling():
 
 
 @pytest.fixture
+def mock_pipeline_service_get_with_spot_strategy():
+    with mock.patch.object(
+        pipeline_service_client.PipelineServiceClient, "get_training_pipeline"
+    ) as mock_get_training_pipeline:
+        mock_get_training_pipeline.side_effect = [
+            make_training_pipeline_with_spot_strategy(
+                state=gca_pipeline_state.PipelineState.PIPELINE_STATE_PENDING,
+            ),
+            make_training_pipeline_with_spot_strategy(
+                state=gca_pipeline_state.PipelineState.PIPELINE_STATE_RUNNING,
+            ),
+            make_training_pipeline_with_spot_strategy(
+                state=gca_pipeline_state.PipelineState.PIPELINE_STATE_RUNNING,
+            ),
+            make_training_pipeline_with_spot_strategy(
+                state=gca_pipeline_state.PipelineState.PIPELINE_STATE_RUNNING,
+            ),
+            make_training_pipeline_with_spot_strategy(
+                state=gca_pipeline_state.PipelineState.PIPELINE_STATE_SUCCEEDED,
+            ),
+            make_training_pipeline_with_spot_strategy(
+                state=gca_pipeline_state.PipelineState.PIPELINE_STATE_SUCCEEDED,
+            ),
+        ]
+
+        yield mock_get_training_pipeline
+
+
+@pytest.fixture
 def mock_pipeline_service_cancel():
     with mock.patch.object(
         pipeline_service_client.PipelineServiceClient, "cancel_training_pipeline"
@@ -1020,6 +1078,19 @@ def mock_pipeline_service_create_with_scheduling():
     ) as mock_create_training_pipeline:
         mock_create_training_pipeline.return_value = (
             make_training_pipeline_with_scheduling(
+                state=gca_pipeline_state.PipelineState.PIPELINE_STATE_PENDING,
+            )
+        )
+        yield mock_create_training_pipeline
+
+
+@pytest.fixture
+def mock_pipeline_service_create_with_spot_strategy():
+    with mock.patch.object(
+        pipeline_service_client.PipelineServiceClient, "create_training_pipeline"
+    ) as mock_create_training_pipeline:
+        mock_create_training_pipeline.return_value = (
+            make_training_pipeline_with_spot_strategy(
                 state=gca_pipeline_state.PipelineState.PIPELINE_STATE_PENDING,
             )
         )
@@ -2391,6 +2462,58 @@ class TestCustomTrainingJob:
     @mock.patch.object(training_jobs, "_JOB_WAIT_TIME", 1)
     @mock.patch.object(training_jobs, "_LOG_WAIT_TIME", 1)
     @pytest.mark.usefixtures(
+        "mock_pipeline_service_create_with_spot_strategy",
+        "mock_pipeline_service_get_with_spot_strategy",
+        "mock_python_package_to_gcs",
+    )
+    @pytest.mark.parametrize("sync", [True, False])
+    def test_run_call_pipeline_service_create_with_spot_strategy(self, sync):
+
+        aiplatform.init(
+            project=_TEST_PROJECT,
+            staging_bucket=_TEST_BUCKET_NAME,
+            credentials=_TEST_CREDENTIALS,
+        )
+
+        job = training_jobs.CustomTrainingJob(
+            display_name=_TEST_DISPLAY_NAME,
+            script_path=_TEST_LOCAL_SCRIPT_FILE_NAME,
+            container_uri=_TEST_TRAINING_CONTAINER_IMAGE,
+        )
+
+        job.run(
+            base_output_dir=_TEST_BASE_OUTPUT_DIR,
+            args=_TEST_RUN_ARGS,
+            machine_type=_TEST_MACHINE_TYPE,
+            accelerator_type=_TEST_ACCELERATOR_TYPE,
+            accelerator_count=_TEST_ACCELERATOR_COUNT,
+            timeout=_TEST_TIMEOUT,
+            restart_job_on_worker_restart=_TEST_RESTART_JOB_ON_WORKER_RESTART,
+            sync=sync,
+            create_request_timeout=None,
+            disable_retries=_TEST_DISABLE_RETRIES,
+        )
+
+        if not sync:
+            job.wait()
+
+        assert job._gca_resource == make_training_pipeline_with_spot_strategy(
+            gca_pipeline_state.PipelineState.PIPELINE_STATE_SUCCEEDED
+        )
+
+        assert (
+            job._gca_resource.state
+            == gca_pipeline_state.PipelineState.PIPELINE_STATE_SUCCEEDED
+        )
+
+        assert (
+            job._gca_resource.training_task_inputs["scheduling_strategy"]
+            == _TEST_SPOT_STRATEGY
+        )
+
+    @mock.patch.object(training_jobs, "_JOB_WAIT_TIME", 1)
+    @mock.patch.object(training_jobs, "_LOG_WAIT_TIME", 1)
+    @pytest.mark.usefixtures(
         "mock_pipeline_service_create_with_no_model_to_upload",
         "mock_pipeline_service_get_with_no_model_to_upload",
         "mock_python_package_to_gcs",
@@ -3406,6 +3529,99 @@ class TestCustomTrainingJob:
                 "machine_type": _TEST_MACHINE_TYPE_TPU,
                 "accelerator_type": _TEST_ACCELERATOR_TPU_TYPE,
                 "accelerator_count": 32,
+            },
+            "disk_spec": {
+                "boot_disk_type": _TEST_BOOT_DISK_TYPE_DEFAULT,
+                "boot_disk_size_gb": _TEST_BOOT_DISK_SIZE_GB_DEFAULT,
+            },
+            "python_package_spec": {
+                "executor_image_uri": _TEST_TRAINING_CONTAINER_IMAGE,
+                "python_module": _TEST_MODULE_NAME,
+                "package_uris": [_TEST_OUTPUT_PYTHON_PACKAGE_PATH],
+            },
+        }
+
+        true_training_pipeline = gca_training_pipeline.TrainingPipeline(
+            display_name=_TEST_DISPLAY_NAME,
+            labels=_TEST_LABELS,
+            training_task_definition=schema.training_job.definition.custom_task,
+            training_task_inputs=json_format.ParseDict(
+                {
+                    "worker_pool_specs": [true_worker_pool_spec],
+                    "base_output_directory": {
+                        "output_uri_prefix": _TEST_BASE_OUTPUT_DIR
+                    },
+                },
+                struct_pb2.Value(),
+            ),
+            model_to_upload=true_managed_model,
+        )
+
+        mock_pipeline_service_create.assert_called_once_with(
+            parent=initializer.global_config.common_location_path(),
+            training_pipeline=true_training_pipeline,
+            timeout=None,
+        )
+
+    @mock.patch.object(training_jobs, "_JOB_WAIT_TIME", 1)
+    @mock.patch.object(training_jobs, "_LOG_WAIT_TIME", 1)
+    @pytest.mark.usefixtures(
+        "mock_pipeline_service_create",
+        "mock_pipeline_service_get",
+        "mock_python_package_to_gcs",
+        "mock_model_service_get",
+    )
+    def test_training_job_reservation_affinity(self, mock_pipeline_service_create):
+        aiplatform.init(project=_TEST_PROJECT, staging_bucket=_TEST_BUCKET_NAME)
+
+        job = training_jobs.CustomTrainingJob(
+            display_name=_TEST_DISPLAY_NAME,
+            labels=_TEST_LABELS,
+            script_path=_TEST_LOCAL_SCRIPT_FILE_NAME,
+            container_uri=_TEST_TRAINING_CONTAINER_IMAGE,
+            model_serving_container_image_uri=_TEST_SERVING_CONTAINER_IMAGE,
+            model_serving_container_predict_route=_TEST_SERVING_CONTAINER_PREDICTION_ROUTE,
+            model_serving_container_health_route=_TEST_SERVING_CONTAINER_HEALTH_ROUTE,
+            model_instance_schema_uri=_TEST_MODEL_INSTANCE_SCHEMA_URI,
+            model_parameters_schema_uri=_TEST_MODEL_PARAMETERS_SCHEMA_URI,
+            model_prediction_schema_uri=_TEST_MODEL_PREDICTION_SCHEMA_URI,
+            model_serving_container_command=_TEST_MODEL_SERVING_CONTAINER_COMMAND,
+            model_description=_TEST_MODEL_DESCRIPTION,
+        )
+
+        job.run(
+            machine_type=_TEST_MACHINE_TYPE,
+            base_output_dir=_TEST_BASE_OUTPUT_DIR,
+            reservation_affinity_type="ANY_RESERVATION",
+        )
+
+        true_container_spec = gca_model.ModelContainerSpec(
+            image_uri=_TEST_SERVING_CONTAINER_IMAGE,
+            predict_route=_TEST_SERVING_CONTAINER_PREDICTION_ROUTE,
+            health_route=_TEST_SERVING_CONTAINER_HEALTH_ROUTE,
+            command=_TEST_MODEL_SERVING_CONTAINER_COMMAND,
+        )
+
+        true_managed_model = gca_model.Model(
+            display_name=_TEST_DISPLAY_NAME + "-model",
+            labels=_TEST_LABELS,
+            description=_TEST_MODEL_DESCRIPTION,
+            container_spec=true_container_spec,
+            predict_schemata=gca_model.PredictSchemata(
+                instance_schema_uri=_TEST_MODEL_INSTANCE_SCHEMA_URI,
+                parameters_schema_uri=_TEST_MODEL_PARAMETERS_SCHEMA_URI,
+                prediction_schema_uri=_TEST_MODEL_PREDICTION_SCHEMA_URI,
+            ),
+            version_aliases=["default"],
+        )
+
+        true_worker_pool_spec = {
+            "replica_count": _TEST_REPLICA_COUNT,
+            "machine_spec": {
+                "machine_type": _TEST_MACHINE_TYPE,
+                "reservation_affinity": {
+                    "reservation_affinity_type": "ANY_RESERVATION"
+                },
             },
             "disk_spec": {
                 "boot_disk_type": _TEST_BOOT_DISK_TYPE_DEFAULT,
@@ -5458,6 +5674,99 @@ class TestCustomContainerTrainingJob:
             timeout=None,
         )
 
+    @mock.patch.object(training_jobs, "_JOB_WAIT_TIME", 1)
+    @mock.patch.object(training_jobs, "_LOG_WAIT_TIME", 1)
+    @pytest.mark.usefixtures(
+        "mock_pipeline_service_create",
+        "mock_pipeline_service_get",
+        "mock_python_package_to_gcs",
+        "mock_model_service_get",
+    )
+    def test_training_job_reservation_affinity(self, mock_pipeline_service_create):
+        aiplatform.init(project=_TEST_PROJECT, staging_bucket=_TEST_BUCKET_NAME)
+
+        job = training_jobs.CustomContainerTrainingJob(
+            display_name=_TEST_DISPLAY_NAME,
+            container_uri=_TEST_TRAINING_CONTAINER_IMAGE,
+            command=_TEST_TRAINING_CONTAINER_CMD,
+            model_serving_container_image_uri=_TEST_SERVING_CONTAINER_IMAGE,
+            model_serving_container_predict_route=_TEST_SERVING_CONTAINER_PREDICTION_ROUTE,
+            model_serving_container_health_route=_TEST_SERVING_CONTAINER_HEALTH_ROUTE,
+            model_instance_schema_uri=_TEST_MODEL_INSTANCE_SCHEMA_URI,
+            model_parameters_schema_uri=_TEST_MODEL_PARAMETERS_SCHEMA_URI,
+            model_prediction_schema_uri=_TEST_MODEL_PREDICTION_SCHEMA_URI,
+            model_serving_container_command=_TEST_MODEL_SERVING_CONTAINER_COMMAND,
+            model_description=_TEST_MODEL_DESCRIPTION,
+        )
+
+        job.run(
+            machine_type=_TEST_MACHINE_TYPE,
+            accelerator_type=_TEST_ACCELERATOR_TYPE,
+            accelerator_count=32,
+            base_output_dir=_TEST_BASE_OUTPUT_DIR,
+            reservation_affinity_type="ANY_RESERVATION",
+        )
+
+        true_container_spec = gca_model.ModelContainerSpec(
+            image_uri=_TEST_SERVING_CONTAINER_IMAGE,
+            predict_route=_TEST_SERVING_CONTAINER_PREDICTION_ROUTE,
+            health_route=_TEST_SERVING_CONTAINER_HEALTH_ROUTE,
+            command=_TEST_MODEL_SERVING_CONTAINER_COMMAND,
+        )
+
+        true_managed_model = gca_model.Model(
+            display_name=_TEST_DISPLAY_NAME + "-model",
+            description=_TEST_MODEL_DESCRIPTION,
+            container_spec=true_container_spec,
+            predict_schemata=gca_model.PredictSchemata(
+                instance_schema_uri=_TEST_MODEL_INSTANCE_SCHEMA_URI,
+                parameters_schema_uri=_TEST_MODEL_PARAMETERS_SCHEMA_URI,
+                prediction_schema_uri=_TEST_MODEL_PREDICTION_SCHEMA_URI,
+            ),
+            version_aliases=["default"],
+        )
+
+        true_worker_pool_spec = {
+            "replica_count": _TEST_REPLICA_COUNT,
+            "machine_spec": {
+                "machine_type": _TEST_MACHINE_TYPE,
+                "accelerator_type": _TEST_ACCELERATOR_TYPE,
+                "accelerator_count": 32,
+                "reservation_affinity": {
+                    "reservation_affinity_type": "ANY_RESERVATION"
+                },
+            },
+            "disk_spec": {
+                "boot_disk_type": _TEST_BOOT_DISK_TYPE_DEFAULT,
+                "boot_disk_size_gb": _TEST_BOOT_DISK_SIZE_GB_DEFAULT,
+            },
+            "containerSpec": {
+                "imageUri": _TEST_TRAINING_CONTAINER_IMAGE,
+                "command": _TEST_TRAINING_CONTAINER_CMD,
+            },
+        }
+
+        true_training_pipeline = gca_training_pipeline.TrainingPipeline(
+            display_name=_TEST_DISPLAY_NAME,
+            training_task_definition=schema.training_job.definition.custom_task,
+            training_task_inputs=json_format.ParseDict(
+                {
+                    "worker_pool_specs": [true_worker_pool_spec],
+                    "base_output_directory": {
+                        "output_uri_prefix": _TEST_BASE_OUTPUT_DIR
+                    },
+                },
+                struct_pb2.Value(),
+            ),
+            model_to_upload=true_managed_model,
+        )
+
+        mock_pipeline_service_create.assert_called_once_with(
+            parent=initializer.global_config.common_location_path(),
+            training_pipeline=true_training_pipeline,
+            timeout=None,
+        )
+
 
 class Test_WorkerPoolSpec:
     def test_machine_spec_return_spec_dict(self):
@@ -5466,6 +5775,9 @@ class Test_WorkerPoolSpec:
             machine_type=_TEST_MACHINE_TYPE,
             accelerator_count=_TEST_ACCELERATOR_COUNT,
             accelerator_type=_TEST_ACCELERATOR_TYPE,
+            reservation_affinity_type="SPECIFIC_RESERVATION",
+            reservation_affinity_key="compute.googleapis.com/reservation-name",
+            reservation_affinity_values="projects/{project_id_or_number}/zones/{zone}/reservations/{reservation_name}",
         )
 
         true_spec_dict = {
@@ -5473,6 +5785,11 @@ class Test_WorkerPoolSpec:
                 "machine_type": _TEST_MACHINE_TYPE,
                 "accelerator_type": _TEST_ACCELERATOR_TYPE,
                 "accelerator_count": _TEST_ACCELERATOR_COUNT,
+                "reservation_affinity": {
+                    "reservation_affinity_type": "SPECIFIC_RESERVATION",
+                    "key": "compute.googleapis.com/reservation-name",
+                    "values": "projects/{project_id_or_number}/zones/{zone}/reservations/{reservation_name}",
+                },
             },
             "replica_count": _TEST_REPLICA_COUNT,
             "disk_spec": {
@@ -5568,18 +5885,23 @@ class Test_DistributedTrainingSpec:
                 machine_type=_TEST_MACHINE_TYPE,
                 accelerator_count=_TEST_ACCELERATOR_COUNT,
                 accelerator_type=_TEST_ACCELERATOR_TYPE,
+                reservation_affinity_type="ANY_RESERVATION",
             ),
             worker_spec=worker_spec_utils._WorkerPoolSpec(
                 replica_count=10,
                 machine_type=_TEST_MACHINE_TYPE,
                 accelerator_count=_TEST_ACCELERATOR_COUNT,
                 accelerator_type=_TEST_ACCELERATOR_TYPE,
+                reservation_affinity_type="SPECIFIC_RESERVATION",
+                reservation_affinity_key="compute.googleapis.com/reservation-name",
+                reservation_affinity_values="projects/{project_id_or_number}/zones/{zone}/reservations/{reservation_name}",
             ),
             server_spec=worker_spec_utils._WorkerPoolSpec(
                 replica_count=3,
                 machine_type=_TEST_MACHINE_TYPE,
                 accelerator_count=_TEST_ACCELERATOR_COUNT,
                 accelerator_type=_TEST_ACCELERATOR_TYPE,
+                reservation_affinity_type="NO_RESERVATION",
             ),
             evaluator_spec=worker_spec_utils._WorkerPoolSpec(
                 replica_count=1,
@@ -5595,6 +5917,9 @@ class Test_DistributedTrainingSpec:
                     "machine_type": _TEST_MACHINE_TYPE,
                     "accelerator_type": _TEST_ACCELERATOR_TYPE,
                     "accelerator_count": _TEST_ACCELERATOR_COUNT,
+                    "reservation_affinity": {
+                        "reservation_affinity_type": "ANY_RESERVATION",
+                    },
                 },
                 "replica_count": 1,
                 "disk_spec": {
@@ -5607,6 +5932,11 @@ class Test_DistributedTrainingSpec:
                     "machine_type": _TEST_MACHINE_TYPE,
                     "accelerator_type": _TEST_ACCELERATOR_TYPE,
                     "accelerator_count": _TEST_ACCELERATOR_COUNT,
+                    "reservation_affinity": {
+                        "reservation_affinity_type": "SPECIFIC_RESERVATION",
+                        "key": "compute.googleapis.com/reservation-name",
+                        "values": "projects/{project_id_or_number}/zones/{zone}/reservations/{reservation_name}",
+                    },
                 },
                 "replica_count": 10,
                 "disk_spec": {
@@ -5619,6 +5949,9 @@ class Test_DistributedTrainingSpec:
                     "machine_type": _TEST_MACHINE_TYPE,
                     "accelerator_type": _TEST_ACCELERATOR_TYPE,
                     "accelerator_count": _TEST_ACCELERATOR_COUNT,
+                    "reservation_affinity": {
+                        "reservation_affinity_type": "NO_RESERVATION",
+                    },
                 },
                 "replica_count": 3,
                 "disk_spec": {
@@ -5644,13 +5977,14 @@ class Test_DistributedTrainingSpec:
 
     def test_chief_worker_pool_returns_spec(self):
 
-        chief_worker_spec = (
-            worker_spec_utils._DistributedTrainingSpec.chief_worker_pool(
-                replica_count=10,
-                machine_type=_TEST_MACHINE_TYPE,
-                accelerator_count=_TEST_ACCELERATOR_COUNT,
-                accelerator_type=_TEST_ACCELERATOR_TYPE,
-            )
+        chief_worker_spec = worker_spec_utils._DistributedTrainingSpec.chief_worker_pool(
+            replica_count=10,
+            machine_type=_TEST_MACHINE_TYPE,
+            accelerator_count=_TEST_ACCELERATOR_COUNT,
+            accelerator_type=_TEST_ACCELERATOR_TYPE,
+            reservation_affinity_type="SPECIFIC_RESERVATION",
+            reservation_affinity_key="compute.googleapis.com/reservation-name",
+            reservation_affinity_values="projects/{project_id_or_number}/zones/{zone}/reservations/{reservation_name}",
         )
 
         true_pool_spec = [
@@ -5659,6 +5993,11 @@ class Test_DistributedTrainingSpec:
                     "machine_type": _TEST_MACHINE_TYPE,
                     "accelerator_type": _TEST_ACCELERATOR_TYPE,
                     "accelerator_count": _TEST_ACCELERATOR_COUNT,
+                    "reservation_affinity": {
+                        "reservation_affinity_type": "SPECIFIC_RESERVATION",
+                        "key": "compute.googleapis.com/reservation-name",
+                        "values": "projects/{project_id_or_number}/zones/{zone}/reservations/{reservation_name}",
+                    },
                 },
                 "replica_count": 1,
                 "disk_spec": {
@@ -5671,6 +6010,11 @@ class Test_DistributedTrainingSpec:
                     "machine_type": _TEST_MACHINE_TYPE,
                     "accelerator_type": _TEST_ACCELERATOR_TYPE,
                     "accelerator_count": _TEST_ACCELERATOR_COUNT,
+                    "reservation_affinity": {
+                        "reservation_affinity_type": "SPECIFIC_RESERVATION",
+                        "key": "compute.googleapis.com/reservation-name",
+                        "values": "projects/{project_id_or_number}/zones/{zone}/reservations/{reservation_name}",
+                    },
                 },
                 "replica_count": 9,
                 "disk_spec": {
@@ -5684,13 +6028,14 @@ class Test_DistributedTrainingSpec:
 
     def test_chief_worker_pool_returns_just_chief(self):
 
-        chief_worker_spec = (
-            worker_spec_utils._DistributedTrainingSpec.chief_worker_pool(
-                replica_count=1,
-                machine_type=_TEST_MACHINE_TYPE,
-                accelerator_count=_TEST_ACCELERATOR_COUNT,
-                accelerator_type=_TEST_ACCELERATOR_TYPE,
-            )
+        chief_worker_spec = worker_spec_utils._DistributedTrainingSpec.chief_worker_pool(
+            replica_count=1,
+            machine_type=_TEST_MACHINE_TYPE,
+            accelerator_count=_TEST_ACCELERATOR_COUNT,
+            accelerator_type=_TEST_ACCELERATOR_TYPE,
+            reservation_affinity_type="SPECIFIC_RESERVATION",
+            reservation_affinity_key="compute.googleapis.com/reservation-name",
+            reservation_affinity_values="projects/{project_id_or_number}/zones/{zone}/reservations/{reservation_name}",
         )
 
         true_pool_spec = [
@@ -5699,6 +6044,11 @@ class Test_DistributedTrainingSpec:
                     "machine_type": _TEST_MACHINE_TYPE,
                     "accelerator_type": _TEST_ACCELERATOR_TYPE,
                     "accelerator_count": _TEST_ACCELERATOR_COUNT,
+                    "reservation_affinity": {
+                        "reservation_affinity_type": "SPECIFIC_RESERVATION",
+                        "key": "compute.googleapis.com/reservation-name",
+                        "values": "projects/{project_id_or_number}/zones/{zone}/reservations/{reservation_name}",
+                    },
                 },
                 "replica_count": 1,
                 "disk_spec": {
@@ -7945,6 +8295,101 @@ class TestCustomPythonPackageTrainingJob:
                 "machine_type": _TEST_MACHINE_TYPE_TPU,
                 "accelerator_type": _TEST_ACCELERATOR_TPU_TYPE,
                 "accelerator_count": 32,
+            },
+            "disk_spec": {
+                "boot_disk_type": _TEST_BOOT_DISK_TYPE_DEFAULT,
+                "boot_disk_size_gb": _TEST_BOOT_DISK_SIZE_GB_DEFAULT,
+            },
+            "python_package_spec": {
+                "executor_image_uri": _TEST_TRAINING_CONTAINER_IMAGE,
+                "python_module": _TEST_PYTHON_MODULE_NAME,
+                "package_uris": [_TEST_OUTPUT_PYTHON_PACKAGE_PATH],
+            },
+        }
+
+        true_training_pipeline = gca_training_pipeline.TrainingPipeline(
+            display_name=_TEST_DISPLAY_NAME,
+            training_task_definition=schema.training_job.definition.custom_task,
+            training_task_inputs=json_format.ParseDict(
+                {
+                    "worker_pool_specs": [true_worker_pool_spec],
+                    "base_output_directory": {
+                        "output_uri_prefix": _TEST_BASE_OUTPUT_DIR
+                    },
+                },
+                struct_pb2.Value(),
+            ),
+            model_to_upload=true_managed_model,
+        )
+
+        mock_pipeline_service_create.assert_called_once_with(
+            parent=initializer.global_config.common_location_path(),
+            training_pipeline=true_training_pipeline,
+            timeout=None,
+        )
+
+    @mock.patch.object(training_jobs, "_JOB_WAIT_TIME", 1)
+    @mock.patch.object(training_jobs, "_LOG_WAIT_TIME", 1)
+    @pytest.mark.usefixtures(
+        "mock_pipeline_service_create",
+        "mock_pipeline_service_get",
+        "mock_python_package_to_gcs",
+        "mock_model_service_get",
+    )
+    def test_training_job_reservation_affinity(self, mock_pipeline_service_create):
+        aiplatform.init(project=_TEST_PROJECT, staging_bucket=_TEST_BUCKET_NAME)
+
+        job = training_jobs.CustomPythonPackageTrainingJob(
+            display_name=_TEST_DISPLAY_NAME,
+            python_package_gcs_uri=_TEST_OUTPUT_PYTHON_PACKAGE_PATH,
+            python_module_name=_TEST_PYTHON_MODULE_NAME,
+            container_uri=_TEST_TRAINING_CONTAINER_IMAGE,
+            model_serving_container_image_uri=_TEST_SERVING_CONTAINER_IMAGE,
+            model_serving_container_predict_route=_TEST_SERVING_CONTAINER_PREDICTION_ROUTE,
+            model_serving_container_health_route=_TEST_SERVING_CONTAINER_HEALTH_ROUTE,
+            model_serving_container_command=_TEST_MODEL_SERVING_CONTAINER_COMMAND,
+            model_description=_TEST_MODEL_DESCRIPTION,
+            model_instance_schema_uri=_TEST_MODEL_INSTANCE_SCHEMA_URI,
+            model_parameters_schema_uri=_TEST_MODEL_PARAMETERS_SCHEMA_URI,
+            model_prediction_schema_uri=_TEST_MODEL_PREDICTION_SCHEMA_URI,
+        )
+
+        job.run(
+            machine_type=_TEST_MACHINE_TYPE,
+            accelerator_type=_TEST_ACCELERATOR_TYPE,
+            accelerator_count=32,
+            base_output_dir=_TEST_BASE_OUTPUT_DIR,
+            reservation_affinity_type="ANY_RESERVATION",
+        )
+
+        true_container_spec = gca_model.ModelContainerSpec(
+            image_uri=_TEST_SERVING_CONTAINER_IMAGE,
+            predict_route=_TEST_SERVING_CONTAINER_PREDICTION_ROUTE,
+            health_route=_TEST_SERVING_CONTAINER_HEALTH_ROUTE,
+            command=_TEST_MODEL_SERVING_CONTAINER_COMMAND,
+        )
+
+        true_managed_model = gca_model.Model(
+            display_name=_TEST_DISPLAY_NAME + "-model",
+            description=_TEST_MODEL_DESCRIPTION,
+            container_spec=true_container_spec,
+            predict_schemata=gca_model.PredictSchemata(
+                instance_schema_uri=_TEST_MODEL_INSTANCE_SCHEMA_URI,
+                parameters_schema_uri=_TEST_MODEL_PARAMETERS_SCHEMA_URI,
+                prediction_schema_uri=_TEST_MODEL_PREDICTION_SCHEMA_URI,
+            ),
+            version_aliases=["default"],
+        )
+
+        true_worker_pool_spec = {
+            "replica_count": _TEST_REPLICA_COUNT,
+            "machine_spec": {
+                "machine_type": _TEST_MACHINE_TYPE,
+                "accelerator_type": _TEST_ACCELERATOR_TYPE,
+                "accelerator_count": 32,
+                "reservation_affinity": {
+                    "reservation_affinity_type": "ANY_RESERVATION"
+                },
             },
             "disk_spec": {
                 "boot_disk_type": _TEST_BOOT_DISK_TYPE_DEFAULT,

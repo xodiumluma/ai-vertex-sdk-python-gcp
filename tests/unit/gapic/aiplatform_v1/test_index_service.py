@@ -47,6 +47,7 @@ from google.api_core import operation
 from google.api_core import operation_async  # type: ignore
 from google.api_core import operations_v1
 from google.api_core import path_template
+from google.api_core import retry as retries
 from google.auth import credentials as ga_credentials
 from google.auth.exceptions import MutualTLSChannelError
 from google.cloud.aiplatform_v1.services.index_service import IndexServiceAsyncClient
@@ -1222,8 +1223,9 @@ def test_create_index_use_cached_wrapped_rpc():
         # Establish that the underlying gRPC stub method was called.
         assert mock_rpc.call_count == 1
 
-        # Operation methods build a cached wrapper on first rpc call
-        # subsequent calls should use the cached wrapper
+        # Operation methods call wrapper_fn to build a cached
+        # client._transport.operations_client instance on first rpc call.
+        # Subsequent calls should use the cached wrapper
         wrapper_fn.reset_mock()
 
         client.create_index(request)
@@ -1277,31 +1279,28 @@ async def test_create_index_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.create_index
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.create_index(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
-        # Operation methods build a cached wrapper on first rpc call
-        # subsequent calls should use the cached wrapper
+        # Operation methods call wrapper_fn to build a cached
+        # client._transport.operations_client instance on first rpc call.
+        # Subsequent calls should use the cached wrapper
         wrapper_fn.reset_mock()
 
         await client.create_index(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -1520,6 +1519,8 @@ def test_get_index(request_type, transport: str = "grpc"):
             metadata_schema_uri="metadata_schema_uri_value",
             etag="etag_value",
             index_update_method=index.Index.IndexUpdateMethod.BATCH_UPDATE,
+            satisfies_pzs=True,
+            satisfies_pzi=True,
         )
         response = client.get_index(request)
 
@@ -1537,6 +1538,8 @@ def test_get_index(request_type, transport: str = "grpc"):
     assert response.metadata_schema_uri == "metadata_schema_uri_value"
     assert response.etag == "etag_value"
     assert response.index_update_method == index.Index.IndexUpdateMethod.BATCH_UPDATE
+    assert response.satisfies_pzs is True
+    assert response.satisfies_pzi is True
 
 
 def test_get_index_empty_call():
@@ -1641,6 +1644,8 @@ async def test_get_index_empty_call_async():
                 metadata_schema_uri="metadata_schema_uri_value",
                 etag="etag_value",
                 index_update_method=index.Index.IndexUpdateMethod.BATCH_UPDATE,
+                satisfies_pzs=True,
+                satisfies_pzi=True,
             )
         )
         response = await client.get_index()
@@ -1670,27 +1675,23 @@ async def test_get_index_async_use_cached_wrapped_rpc(transport: str = "grpc_asy
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.get_index
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.get_index(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.get_index(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -1717,6 +1718,8 @@ async def test_get_index_async(
                 metadata_schema_uri="metadata_schema_uri_value",
                 etag="etag_value",
                 index_update_method=index.Index.IndexUpdateMethod.BATCH_UPDATE,
+                satisfies_pzs=True,
+                satisfies_pzi=True,
             )
         )
         response = await client.get_index(request)
@@ -1735,6 +1738,8 @@ async def test_get_index_async(
     assert response.metadata_schema_uri == "metadata_schema_uri_value"
     assert response.etag == "etag_value"
     assert response.index_update_method == index.Index.IndexUpdateMethod.BATCH_UPDATE
+    assert response.satisfies_pzs is True
+    assert response.satisfies_pzi is True
 
 
 @pytest.mark.asyncio
@@ -2049,27 +2054,23 @@ async def test_list_indexes_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.list_indexes
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.list_indexes(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.list_indexes(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -2292,12 +2293,16 @@ def test_list_indexes_pager(transport_name: str = "grpc"):
         )
 
         expected_metadata = ()
+        retry = retries.Retry()
+        timeout = 5
         expected_metadata = tuple(expected_metadata) + (
             gapic_v1.routing_header.to_grpc_metadata((("parent", ""),)),
         )
-        pager = client.list_indexes(request={})
+        pager = client.list_indexes(request={}, retry=retry, timeout=timeout)
 
         assert pager._metadata == expected_metadata
+        assert pager._retry == retry
+        assert pager._timeout == timeout
 
         results = list(pager)
         assert len(results) == 6
@@ -2548,8 +2553,9 @@ def test_update_index_use_cached_wrapped_rpc():
         # Establish that the underlying gRPC stub method was called.
         assert mock_rpc.call_count == 1
 
-        # Operation methods build a cached wrapper on first rpc call
-        # subsequent calls should use the cached wrapper
+        # Operation methods call wrapper_fn to build a cached
+        # client._transport.operations_client instance on first rpc call.
+        # Subsequent calls should use the cached wrapper
         wrapper_fn.reset_mock()
 
         client.update_index(request)
@@ -2603,31 +2609,28 @@ async def test_update_index_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.update_index
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.update_index(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
-        # Operation methods build a cached wrapper on first rpc call
-        # subsequent calls should use the cached wrapper
+        # Operation methods call wrapper_fn to build a cached
+        # client._transport.operations_client instance on first rpc call.
+        # Subsequent calls should use the cached wrapper
         wrapper_fn.reset_mock()
 
         await client.update_index(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -2927,8 +2930,9 @@ def test_delete_index_use_cached_wrapped_rpc():
         # Establish that the underlying gRPC stub method was called.
         assert mock_rpc.call_count == 1
 
-        # Operation methods build a cached wrapper on first rpc call
-        # subsequent calls should use the cached wrapper
+        # Operation methods call wrapper_fn to build a cached
+        # client._transport.operations_client instance on first rpc call.
+        # Subsequent calls should use the cached wrapper
         wrapper_fn.reset_mock()
 
         client.delete_index(request)
@@ -2982,31 +2986,28 @@ async def test_delete_index_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.delete_index
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.delete_index(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
-        # Operation methods build a cached wrapper on first rpc call
-        # subsequent calls should use the cached wrapper
+        # Operation methods call wrapper_fn to build a cached
+        # client._transport.operations_client instance on first rpc call.
+        # Subsequent calls should use the cached wrapper
         wrapper_fn.reset_mock()
 
         await client.delete_index(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -3357,27 +3358,23 @@ async def test_upsert_datapoints_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.upsert_datapoints
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.upsert_datapoints(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.upsert_datapoints(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -3652,27 +3649,23 @@ async def test_remove_datapoints_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.remove_datapoints
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.remove_datapoints(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.remove_datapoints(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -3824,6 +3817,8 @@ def test_create_index_rest(request_type):
         },
         "index_update_method": 1,
         "encryption_spec": {"kms_key_name": "kms_key_name_value"},
+        "satisfies_pzs": True,
+        "satisfies_pzi": True,
     }
     # The version of a generated dependency at test runtime may differ from the version used during generation.
     # Delete any fields which are not present in the current runtime dependency
@@ -4019,7 +4014,7 @@ def test_create_index_rest_required_fields(
 
             response = client.create_index(request)
 
-            expected_params = []
+            expected_params = [("$alt", "json;enum-encoding=int")]
             actual_params = req.call_args.kwargs["params"]
             assert expected_params == actual_params
 
@@ -4213,6 +4208,8 @@ def test_get_index_rest(request_type):
             metadata_schema_uri="metadata_schema_uri_value",
             etag="etag_value",
             index_update_method=index.Index.IndexUpdateMethod.BATCH_UPDATE,
+            satisfies_pzs=True,
+            satisfies_pzi=True,
         )
 
         # Wrap the value into a proper Response obj
@@ -4234,6 +4231,8 @@ def test_get_index_rest(request_type):
     assert response.metadata_schema_uri == "metadata_schema_uri_value"
     assert response.etag == "etag_value"
     assert response.index_update_method == index.Index.IndexUpdateMethod.BATCH_UPDATE
+    assert response.satisfies_pzs is True
+    assert response.satisfies_pzi is True
 
 
 def test_get_index_rest_use_cached_wrapped_rpc():
@@ -4339,7 +4338,7 @@ def test_get_index_rest_required_fields(request_type=index_service.GetIndexReque
 
             response = client.get_index(request)
 
-            expected_params = []
+            expected_params = [("$alt", "json;enum-encoding=int")]
             actual_params = req.call_args.kwargs["params"]
             assert expected_params == actual_params
 
@@ -4646,7 +4645,7 @@ def test_list_indexes_rest_required_fields(
 
             response = client.list_indexes(request)
 
-            expected_params = []
+            expected_params = [("$alt", "json;enum-encoding=int")]
             actual_params = req.call_args.kwargs["params"]
             assert expected_params == actual_params
 
@@ -4916,6 +4915,8 @@ def test_update_index_rest(request_type):
         },
         "index_update_method": 1,
         "encryption_spec": {"kms_key_name": "kms_key_name_value"},
+        "satisfies_pzs": True,
+        "satisfies_pzi": True,
     }
     # The version of a generated dependency at test runtime may differ from the version used during generation.
     # Delete any fields which are not present in the current runtime dependency
@@ -5108,7 +5109,7 @@ def test_update_index_rest_required_fields(
 
             response = client.update_index(request)
 
-            expected_params = []
+            expected_params = [("$alt", "json;enum-encoding=int")]
             actual_params = req.call_args.kwargs["params"]
             assert expected_params == actual_params
 
@@ -5413,7 +5414,7 @@ def test_delete_index_rest_required_fields(
 
             response = client.delete_index(request)
 
-            expected_params = []
+            expected_params = [("$alt", "json;enum-encoding=int")]
             actual_params = req.call_args.kwargs["params"]
             assert expected_params == actual_params
 
@@ -5715,7 +5716,7 @@ def test_upsert_datapoints_rest_required_fields(
 
             response = client.upsert_datapoints(request)
 
-            expected_params = []
+            expected_params = [("$alt", "json;enum-encoding=int")]
             actual_params = req.call_args.kwargs["params"]
             assert expected_params == actual_params
 
@@ -5961,7 +5962,7 @@ def test_remove_datapoints_rest_required_fields(
 
             response = client.remove_datapoints(request)
 
-            expected_params = []
+            expected_params = [("$alt", "json;enum-encoding=int")]
             actual_params = req.call_args.kwargs["params"]
             assert expected_params == actual_params
 

@@ -30,6 +30,7 @@ __protobuf__ = proto.module(
         "RagCorpus",
         "RagFile",
         "RagFileChunkingConfig",
+        "RagFileParsingConfig",
         "UploadRagFileConfig",
         "ImportRagFilesConfig",
     },
@@ -177,6 +178,14 @@ class RagFile(proto.Message):
             uploaded in the UploadRagFile request.
 
             This field is a member of `oneof`_ ``rag_file_source``.
+        slack_source (google.cloud.aiplatform_v1beta1.types.SlackSource):
+            The RagFile is imported from a Slack channel.
+
+            This field is a member of `oneof`_ ``rag_file_source``.
+        jira_source (google.cloud.aiplatform_v1beta1.types.JiraSource):
+            The RagFile is imported from a Jira query.
+
+            This field is a member of `oneof`_ ``rag_file_source``.
         name (str):
             Output only. The resource name of the
             RagFile.
@@ -232,6 +241,18 @@ class RagFile(proto.Message):
         oneof="rag_file_source",
         message=io.DirectUploadSource,
     )
+    slack_source: io.SlackSource = proto.Field(
+        proto.MESSAGE,
+        number=11,
+        oneof="rag_file_source",
+        message=io.SlackSource,
+    )
+    jira_source: io.JiraSource = proto.Field(
+        proto.MESSAGE,
+        number=12,
+        oneof="rag_file_source",
+        message=io.JiraSource,
+    )
     name: str = proto.Field(
         proto.STRING,
         number=1,
@@ -285,6 +306,20 @@ class RagFileChunkingConfig(proto.Message):
     )
 
 
+class RagFileParsingConfig(proto.Message):
+    r"""Specifies the parsing config for RagFiles.
+
+    Attributes:
+        use_advanced_pdf_parsing (bool):
+            Whether to use advanced PDF parsing.
+    """
+
+    use_advanced_pdf_parsing: bool = proto.Field(
+        proto.BOOL,
+        number=2,
+    )
+
+
 class UploadRagFileConfig(proto.Message):
     r"""Config for uploading RagFile.
 
@@ -327,9 +362,21 @@ class ImportRagFilesConfig(proto.Message):
             folders.
 
             This field is a member of `oneof`_ ``import_source``.
+        slack_source (google.cloud.aiplatform_v1beta1.types.SlackSource):
+            Slack channels with their corresponding
+            access tokens.
+
+            This field is a member of `oneof`_ ``import_source``.
+        jira_source (google.cloud.aiplatform_v1beta1.types.JiraSource):
+            Jira queries with their corresponding
+            authentication.
+
+            This field is a member of `oneof`_ ``import_source``.
         rag_file_chunking_config (google.cloud.aiplatform_v1beta1.types.RagFileChunkingConfig):
             Specifies the size and overlap of chunks
             after importing RagFiles.
+        rag_file_parsing_config (google.cloud.aiplatform_v1beta1.types.RagFileParsingConfig):
+            Specifies the parsing config for RagFiles.
         max_embedding_requests_per_min (int):
             Optional. The max number of queries per
             minute that this job is allowed to make to the
@@ -353,10 +400,27 @@ class ImportRagFilesConfig(proto.Message):
         oneof="import_source",
         message=io.GoogleDriveSource,
     )
+    slack_source: io.SlackSource = proto.Field(
+        proto.MESSAGE,
+        number=6,
+        oneof="import_source",
+        message=io.SlackSource,
+    )
+    jira_source: io.JiraSource = proto.Field(
+        proto.MESSAGE,
+        number=7,
+        oneof="import_source",
+        message=io.JiraSource,
+    )
     rag_file_chunking_config: "RagFileChunkingConfig" = proto.Field(
         proto.MESSAGE,
         number=4,
         message="RagFileChunkingConfig",
+    )
+    rag_file_parsing_config: "RagFileParsingConfig" = proto.Field(
+        proto.MESSAGE,
+        number=8,
+        message="RagFileParsingConfig",
     )
     max_embedding_requests_per_min: int = proto.Field(
         proto.INT32,

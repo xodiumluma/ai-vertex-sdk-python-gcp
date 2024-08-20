@@ -228,6 +228,9 @@ class SupervisedTuningDatasetDistribution(proto.Message):
         sum (int):
             Output only. Sum of a given population of
             values.
+        billable_sum (int):
+            Output only. Sum of a given population of
+            values that are billable.
         min_ (float):
             Output only. The minimum of the population
             values.
@@ -280,6 +283,10 @@ class SupervisedTuningDatasetDistribution(proto.Message):
         proto.INT64,
         number=1,
     )
+    billable_sum: int = proto.Field(
+        proto.INT64,
+        number=9,
+    )
     min_: float = proto.Field(
         proto.DOUBLE,
         number=2,
@@ -324,6 +331,9 @@ class SupervisedTuningDataStats(proto.Message):
         total_billable_character_count (int):
             Output only. Number of billable characters in
             the tuning dataset.
+        total_billable_token_count (int):
+            Output only. Number of billable tokens in the
+            tuning dataset.
         tuning_step_count (int):
             Output only. Number of tuning steps for this
             Tuning Job.
@@ -339,6 +349,12 @@ class SupervisedTuningDataStats(proto.Message):
         user_dataset_examples (MutableSequence[google.cloud.aiplatform_v1.types.Content]):
             Output only. Sample user messages in the
             training dataset uri.
+        total_truncated_example_count (int):
+            The number of examples in the dataset that
+            have been truncated by any amount.
+        truncated_example_indices (MutableSequence[int]):
+            A partial sample of the indices (starting
+            from 1) of the truncated examples.
     """
 
     tuning_dataset_example_count: int = proto.Field(
@@ -352,6 +368,10 @@ class SupervisedTuningDataStats(proto.Message):
     total_billable_character_count: int = proto.Field(
         proto.INT64,
         number=3,
+    )
+    total_billable_token_count: int = proto.Field(
+        proto.INT64,
+        number=9,
     )
     tuning_step_count: int = proto.Field(
         proto.INT64,
@@ -378,6 +398,14 @@ class SupervisedTuningDataStats(proto.Message):
         proto.MESSAGE,
         number=8,
         message=content.Content,
+    )
+    total_truncated_example_count: int = proto.Field(
+        proto.INT64,
+        number=10,
+    )
+    truncated_example_indices: MutableSequence[int] = proto.RepeatedField(
+        proto.INT64,
+        number=11,
     )
 
 

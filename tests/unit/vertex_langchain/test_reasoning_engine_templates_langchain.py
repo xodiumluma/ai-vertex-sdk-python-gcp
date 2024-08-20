@@ -17,7 +17,6 @@ from typing import Optional
 from unittest import mock
 
 from google import auth
-from google.auth import credentials as auth_credentials
 import vertexai
 from google.cloud.aiplatform import initializer
 from vertexai.preview import reasoning_engines
@@ -39,6 +38,7 @@ _DEFAULT_PLACE_PHOTO_MAXWIDTH = 400
 _TEST_LOCATION = "us-central1"
 _TEST_PROJECT = "test-project"
 _TEST_MODEL = "gemini-1.0-pro"
+_TEST_SYSTEM_INSTRUCTION = "You are a helpful bot."
 
 
 def place_tool_query(
@@ -65,8 +65,10 @@ def place_photo_query(
 @pytest.fixture(scope="module")
 def google_auth_mock():
     with mock.patch.object(auth, "default") as google_auth_mock:
+        credentials_mock = mock.Mock()
+        credentials_mock.with_quota_project.return_value = None
         google_auth_mock.return_value = (
-            auth_credentials.AnonymousCredentials(),
+            credentials_mock,
             _TEST_PROJECT,
         )
         yield google_auth_mock
@@ -172,6 +174,7 @@ class TestLangchainAgent:
         ]
         agent = reasoning_engines.LangchainAgent(
             model=_TEST_MODEL,
+            system_instruction=_TEST_SYSTEM_INSTRUCTION,
             tools=tools,
         )
         for tool, agent_tool in zip(tools, agent._tools):
@@ -254,11 +257,6 @@ class TestLangchainAgent:
         assert "enable_tracing=True but proceeding with tracing disabled" in caplog.text
 
 
-class TestConvertToolsOrRaise:
-    def test_convert_tools_or_raise(self, vertexai_init_mock):
-        pass
-
-
 def _return_input_no_typing(input_):
     """Returns input back to user."""
     return input_
@@ -270,4 +268,21 @@ class TestConvertToolsOrRaiseErrors:
             reasoning_engines.LangchainAgent(
                 model=_TEST_MODEL,
                 tools=[_return_input_no_typing],
+            )
+
+
+class TestSystemInstructionAndPromptRaisesErrors:
+    def test_raise_both_system_instruction_and_prompt_error(self, vertexai_init_mock):
+        with pytest.raises(
+            ValueError,
+            match=r"Only one of `prompt` or `system_instruction` should be specified.",
+        ):
+            reasoning_engines.LangchainAgent(
+                model=_TEST_MODEL,
+                system_instruction=_TEST_SYSTEM_INSTRUCTION,
+                prompt=prompts.ChatPromptTemplate.from_messages(
+                    [
+                        ("user", "{input}"),
+                    ]
+                ),
             )

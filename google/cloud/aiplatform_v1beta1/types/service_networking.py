@@ -25,6 +25,7 @@ __protobuf__ = proto.module(
     manifest={
         "PrivateServiceConnectConfig",
         "PscAutomatedEndpoints",
+        "PscInterfaceConfig",
     },
 )
 
@@ -39,6 +40,11 @@ class PrivateServiceConnectConfig(proto.Message):
         project_allowlist (MutableSequence[str]):
             A list of Projects from which the forwarding
             rule will target the service attachment.
+        service_attachment (str):
+            Output only. The name of the generated
+            service attachment resource. This is only
+            populated if the endpoint is deployed with
+            PrivateServiceConnect.
     """
 
     enable_private_service_connect: bool = proto.Field(
@@ -48,6 +54,10 @@ class PrivateServiceConnectConfig(proto.Message):
     project_allowlist: MutableSequence[str] = proto.RepeatedField(
         proto.STRING,
         number=2,
+    )
+    service_attachment: str = proto.Field(
+        proto.STRING,
+        number=5,
     )
 
 
@@ -77,6 +87,31 @@ class PscAutomatedEndpoints(proto.Message):
     match_address: str = proto.Field(
         proto.STRING,
         number=3,
+    )
+
+
+class PscInterfaceConfig(proto.Message):
+    r"""Configuration for PSC-I.
+
+    Attributes:
+        network_attachment (str):
+            Optional. The full name of the Compute Engine `network
+            attachment <https://cloud.google.com/vpc/docs/about-network-attachments>`__
+            to attach to the resource. For example,
+            ``projects/12345/regions/us-central1/networkAttachments/myNA``.
+            is of the form
+            ``projects/{project}/regions/{region}/networkAttachments/{networkAttachment}``.
+            Where {project} is a project number, as in ``12345``, and
+            {networkAttachment} is a network attachment name. To specify
+            this field, you must have already [created a network
+            attachment]
+            (https://cloud.google.com/vpc/docs/create-manage-network-attachments#create-network-attachments).
+            This field is only used for resources using PSC-I.
+    """
+
+    network_attachment: str = proto.Field(
+        proto.STRING,
+        number=1,
     )
 
 

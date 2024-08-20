@@ -143,22 +143,24 @@ ray_testing_extra_require = ray_extra_require + [
 
 reasoning_engine_extra_require = [
     "cloudpickle >= 3.0, < 4.0",
+    "google-cloud-trace < 2",
     "opentelemetry-sdk < 2",
     "opentelemetry-exporter-gcp-trace < 2",
     "pydantic >= 2.6.3, < 3",
 ]
 
-rapid_evaluation_extra_require = [
+evaluation_extra_require = [
     "pandas >= 1.0.0, < 2.2.0",
     "tqdm>=4.23.0",
 ]
 
 langchain_extra_require = [
     "langchain >= 0.1.16, < 0.3",
-    "langchain-core < 0.2",
+    "langchain-core < 0.3",
     "langchain-google-vertexai < 2",
     "openinference-instrumentation-langchain >= 0.1.19, < 0.2",
     "tenacity <= 8.3",
+    "orjson <= 3.10.6",
 ]
 
 langchain_testing_extra_require = list(
@@ -188,7 +190,7 @@ full_extra_require = list(
         + autologging_extra_require
         + preview_extra_require
         + ray_extra_require
-        + rapid_evaluation_extra_require
+        + evaluation_extra_require
     )
 )
 testing_extra_require = (
@@ -247,7 +249,7 @@ setuptools.setup(
         ),
         "google-auth >= 2.14.1, <3.0.0dev",
         "proto-plus >= 1.22.3, <2.0.0dev",
-        "protobuf>=3.19.5,<5.0.0dev,!=3.20.0,!=3.20.1,!=4.21.0,!=4.21.1,!=4.21.2,!=4.21.3,!=4.21.4,!=4.21.5",
+        "protobuf>=3.20.2,<6.0.0dev,!=4.21.0,!=4.21.1,!=4.21.2,!=4.21.3,!=4.21.4,!=4.21.5",
         "packaging >= 14.3",
         "google-cloud-storage >= 1.32.0, < 3.0.0dev",
         "google-cloud-bigquery >= 1.15.0, < 4.0.0dev, !=3.20.0",
@@ -274,7 +276,7 @@ setuptools.setup(
         "ray": ray_extra_require,
         "ray_testing": ray_testing_extra_require,
         "reasoningengine": reasoning_engine_extra_require,
-        "rapid_evaluation": rapid_evaluation_extra_require,
+        "evaluation": evaluation_extra_require,
         "langchain": langchain_extra_require,
         "langchain_testing": langchain_testing_extra_require,
         "tokenization": tokenization_extra_require,

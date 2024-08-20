@@ -14,7 +14,6 @@
 # limitations under the License.
 #
 from collections import OrderedDict
-import functools
 import re
 from typing import (
     Dict,
@@ -85,6 +84,10 @@ class VertexRagDataServiceAsyncClient:
     )
     rag_file_path = staticmethod(VertexRagDataServiceClient.rag_file_path)
     parse_rag_file_path = staticmethod(VertexRagDataServiceClient.parse_rag_file_path)
+    secret_version_path = staticmethod(VertexRagDataServiceClient.secret_version_path)
+    parse_secret_version_path = staticmethod(
+        VertexRagDataServiceClient.parse_secret_version_path
+    )
     common_billing_account_path = staticmethod(
         VertexRagDataServiceClient.common_billing_account_path
     )
@@ -207,10 +210,7 @@ class VertexRagDataServiceAsyncClient:
         """
         return self._client._universe_domain
 
-    get_transport_class = functools.partial(
-        type(VertexRagDataServiceClient).get_transport_class,
-        type(VertexRagDataServiceClient),
-    )
+    get_transport_class = VertexRagDataServiceClient.get_transport_class
 
     def __init__(
         self,
@@ -239,9 +239,6 @@ class VertexRagDataServiceAsyncClient:
                 If a Callable is given, it will be called with the same set of initialization
                 arguments as used in the VertexRagDataServiceTransport constructor.
                 If set to None, a transport is chosen automatically.
-                NOTE: "rest" transport functionality is currently in a
-                beta state (preview). We welcome your feedback via an
-                issue in this library's source repository.
             client_options (Optional[Union[google.api_core.client_options.ClientOptions, dict]]):
                 Custom options for the client.
 
@@ -645,6 +642,8 @@ class VertexRagDataServiceAsyncClient:
             method=rpc,
             request=request,
             response=response,
+            retry=retry,
+            timeout=timeout,
             metadata=metadata,
         )
 
@@ -1278,6 +1277,8 @@ class VertexRagDataServiceAsyncClient:
             method=rpc,
             request=request,
             response=response,
+            retry=retry,
+            timeout=timeout,
             metadata=metadata,
         )
 

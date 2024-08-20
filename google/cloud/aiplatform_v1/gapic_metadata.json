@@ -557,6 +557,40 @@
         }
       }
     },
+    "EvaluationService": {
+      "clients": {
+        "grpc": {
+          "libraryClient": "EvaluationServiceClient",
+          "rpcs": {
+            "EvaluateInstances": {
+              "methods": [
+                "evaluate_instances"
+              ]
+            }
+          }
+        },
+        "grpc-async": {
+          "libraryClient": "EvaluationServiceAsyncClient",
+          "rpcs": {
+            "EvaluateInstances": {
+              "methods": [
+                "evaluate_instances"
+              ]
+            }
+          }
+        },
+        "rest": {
+          "libraryClient": "EvaluationServiceClient",
+          "rpcs": {
+            "EvaluateInstances": {
+              "methods": [
+                "evaluate_instances"
+              ]
+            }
+          }
+        }
+      }
+    },
     "FeatureOnlineStoreAdminService": {
       "clients": {
         "grpc": {
@@ -3252,9 +3286,19 @@
                 "assign_notebook_runtime"
               ]
             },
+            "CreateNotebookExecutionJob": {
+              "methods": [
+                "create_notebook_execution_job"
+              ]
+            },
             "CreateNotebookRuntimeTemplate": {
               "methods": [
                 "create_notebook_runtime_template"
+              ]
+            },
+            "DeleteNotebookExecutionJob": {
+              "methods": [
+                "delete_notebook_execution_job"
               ]
             },
             "DeleteNotebookRuntime": {
@@ -3267,6 +3311,11 @@
                 "delete_notebook_runtime_template"
               ]
             },
+            "GetNotebookExecutionJob": {
+              "methods": [
+                "get_notebook_execution_job"
+              ]
+            },
             "GetNotebookRuntime": {
               "methods": [
                 "get_notebook_runtime"
@@ -3275,6 +3324,11 @@
             "GetNotebookRuntimeTemplate": {
               "methods": [
                 "get_notebook_runtime_template"
+              ]
+            },
+            "ListNotebookExecutionJobs": {
+              "methods": [
+                "list_notebook_execution_jobs"
               ]
             },
             "ListNotebookRuntimeTemplates": {
@@ -3312,9 +3366,19 @@
                 "assign_notebook_runtime"
               ]
             },
+            "CreateNotebookExecutionJob": {
+              "methods": [
+                "create_notebook_execution_job"
+              ]
+            },
             "CreateNotebookRuntimeTemplate": {
               "methods": [
                 "create_notebook_runtime_template"
+              ]
+            },
+            "DeleteNotebookExecutionJob": {
+              "methods": [
+                "delete_notebook_execution_job"
               ]
             },
             "DeleteNotebookRuntime": {
@@ -3327,6 +3391,11 @@
                 "delete_notebook_runtime_template"
               ]
             },
+            "GetNotebookExecutionJob": {
+              "methods": [
+                "get_notebook_execution_job"
+              ]
+            },
             "GetNotebookRuntime": {
               "methods": [
                 "get_notebook_runtime"
@@ -3335,6 +3404,11 @@
             "GetNotebookRuntimeTemplate": {
               "methods": [
                 "get_notebook_runtime_template"
+              ]
+            },
+            "ListNotebookExecutionJobs": {
+              "methods": [
+                "list_notebook_execution_jobs"
               ]
             },
             "ListNotebookRuntimeTemplates": {
@@ -3372,9 +3446,19 @@
                 "assign_notebook_runtime"
               ]
             },
+            "CreateNotebookExecutionJob": {
+              "methods": [
+                "create_notebook_execution_job"
+              ]
+            },
             "CreateNotebookRuntimeTemplate": {
               "methods": [
                 "create_notebook_runtime_template"
+              ]
+            },
+            "DeleteNotebookExecutionJob": {
+              "methods": [
+                "delete_notebook_execution_job"
               ]
             },
             "DeleteNotebookRuntime": {
@@ -3387,6 +3471,11 @@
                 "delete_notebook_runtime_template"
               ]
             },
+            "GetNotebookExecutionJob": {
+              "methods": [
+                "get_notebook_execution_job"
+              ]
+            },
             "GetNotebookRuntime": {
               "methods": [
                 "get_notebook_runtime"
@@ -3395,6 +3484,11 @@
             "GetNotebookRuntimeTemplate": {
               "methods": [
                 "get_notebook_runtime_template"
+              ]
+            },
+            "ListNotebookExecutionJobs": {
+              "methods": [
+                "list_notebook_execution_jobs"
               ]
             },
             "ListNotebookRuntimeTemplates": {

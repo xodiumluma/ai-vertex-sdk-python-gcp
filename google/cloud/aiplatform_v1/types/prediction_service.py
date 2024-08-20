@@ -678,21 +678,37 @@ class ExplainResponse(proto.Message):
 class CountTokensRequest(proto.Message):
     r"""Request message for [PredictionService.CountTokens][].
 
+    .. _oneof: https://proto-plus-python.readthedocs.io/en/stable/fields.html#oneofs-mutually-exclusive-fields
+
     Attributes:
         endpoint (str):
             Required. The name of the Endpoint requested to perform
             token counting. Format:
             ``projects/{project}/locations/{location}/endpoints/{endpoint}``
         model (str):
-            Required. The name of the publisher model requested to serve
+            Optional. The name of the publisher model requested to serve
             the prediction. Format:
             ``projects/{project}/locations/{location}/publishers/*/models/*``
         instances (MutableSequence[google.protobuf.struct_pb2.Value]):
-            Required. The instances that are the input to
+            Optional. The instances that are the input to
             token counting call. Schema is identical to the
             prediction schema of the underlying model.
         contents (MutableSequence[google.cloud.aiplatform_v1.types.Content]):
-            Required. Input content.
+            Optional. Input content.
+        system_instruction (google.cloud.aiplatform_v1.types.Content):
+            Optional. The user provided system
+            instructions for the model. Note: only text
+            should be used in parts and content in each part
+            will be in a separate paragraph.
+
+            This field is a member of `oneof`_ ``_system_instruction``.
+        tools (MutableSequence[google.cloud.aiplatform_v1.types.Tool]):
+            Optional. A list of ``Tools`` the model may use to generate
+            the next response.
+
+            A ``Tool`` is a piece of code that enables the system to
+            interact with external systems to perform an action, or set
+            of actions, outside of knowledge and scope of the model.
     """
 
     endpoint: str = proto.Field(
@@ -712,6 +728,17 @@ class CountTokensRequest(proto.Message):
         proto.MESSAGE,
         number=4,
         message=content.Content,
+    )
+    system_instruction: content.Content = proto.Field(
+        proto.MESSAGE,
+        number=5,
+        optional=True,
+        message=content.Content,
+    )
+    tools: MutableSequence[tool.Tool] = proto.RepeatedField(
+        proto.MESSAGE,
+        number=6,
+        message=tool.Tool,
     )
 
 
@@ -744,9 +771,14 @@ class GenerateContentRequest(proto.Message):
 
     Attributes:
         model (str):
-            Required. The name of the publisher model requested to serve
-            the prediction. Format:
+            Required. The fully qualified name of the publisher model or
+            tuned model endpoint to use.
+
+            Publisher model format:
             ``projects/{project}/locations/{location}/publishers/*/models/*``
+
+            Tuned model endpoint format:
+            ``projects/{project}/locations/{location}/endpoints/{endpoint}``
         contents (MutableSequence[google.cloud.aiplatform_v1.types.Content]):
             Required. The content of the current
             conversation with the model.
@@ -888,7 +920,9 @@ class GenerateContentResponse(proto.Message):
 
         Attributes:
             prompt_token_count (int):
-                Number of tokens in the request.
+                Number of tokens in the request. When ``cached_content`` is
+                set, this is still the total effective prompt size meaning
+                this includes the number of tokens in the cached content.
             candidates_token_count (int):
                 Number of tokens in the response(s).
             total_token_count (int):

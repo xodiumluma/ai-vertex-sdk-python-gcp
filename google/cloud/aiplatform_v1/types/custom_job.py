@@ -106,6 +106,10 @@ class CustomJob(proto.Message):
             second worker pool.
 
             The values are the URIs for each node's interactive shell.
+        satisfies_pzs (bool):
+            Output only. Reserved for future use.
+        satisfies_pzi (bool):
+            Output only. Reserved for future use.
     """
 
     name: str = proto.Field(
@@ -165,6 +169,14 @@ class CustomJob(proto.Message):
         proto.STRING,
         proto.STRING,
         number=16,
+    )
+    satisfies_pzs: bool = proto.Field(
+        proto.BOOL,
+        number=18,
+    )
+    satisfies_pzi: bool = proto.Field(
+        proto.BOOL,
+        number=19,
     )
 
 
@@ -539,11 +551,42 @@ class Scheduling(proto.Message):
             gets restarted. This feature can be used by
             distributed training jobs that are not resilient
             to workers leaving and joining a job.
+        strategy (google.cloud.aiplatform_v1.types.Scheduling.Strategy):
+            Optional. This determines which type of
+            scheduling strategy to use.
         disable_retries (bool):
             Optional. Indicates if the job should retry for internal
             errors after the job starts running. If true, overrides
             ``Scheduling.restart_job_on_worker_restart`` to false.
     """
+
+    class Strategy(proto.Enum):
+        r"""Optional. This determines which type of scheduling strategy
+        to use. Right now users have two options such as STANDARD which
+        will use regular on demand resources to schedule the job, the
+        other is SPOT which would leverage spot resources alongwith
+        regular resources to schedule the job.
+
+        Values:
+            STRATEGY_UNSPECIFIED (0):
+                Strategy will default to STANDARD.
+            ON_DEMAND (1):
+                Regular on-demand provisioning strategy.
+            LOW_COST (2):
+                Low cost by making potential use of spot
+                resources.
+            STANDARD (3):
+                Standard provisioning strategy uses regular
+                on-demand resources.
+            SPOT (4):
+                Spot provisioning strategy uses spot
+                resources.
+        """
+        STRATEGY_UNSPECIFIED = 0
+        ON_DEMAND = 1
+        LOW_COST = 2
+        STANDARD = 3
+        SPOT = 4
 
     timeout: duration_pb2.Duration = proto.Field(
         proto.MESSAGE,
@@ -553,6 +596,11 @@ class Scheduling(proto.Message):
     restart_job_on_worker_restart: bool = proto.Field(
         proto.BOOL,
         number=3,
+    )
+    strategy: Strategy = proto.Field(
+        proto.ENUM,
+        number=4,
+        enum=Strategy,
     )
     disable_retries: bool = proto.Field(
         proto.BOOL,

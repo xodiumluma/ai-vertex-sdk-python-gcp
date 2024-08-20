@@ -17,6 +17,7 @@
 
 
 from concurrent import futures
+import enum
 import functools
 import inspect
 import logging
@@ -53,6 +54,14 @@ _TVertexAiServiceClientWithOverride = TypeVar(
 _TOP_GOOGLE_CONSTRUCTOR_METHOD_TAG = "top_google_constructor_method"
 
 
+class _Product(enum.Enum):
+    """Notebook product types."""
+
+    WORKBENCH_INSTANCE = "WORKBENCH_INSTANCE"
+    COLAB_ENTERPRISE = "COLAB_ENTERPRISE"
+    WORKBENCH_CUSTOM_CONTAINER = "WORKBENCH_CUSTOM_CONTAINER"
+
+
 class _Config:
     """Stores common parameters and options for API calls."""
 
@@ -65,7 +74,7 @@ class _Config:
         the project and credentials have already been set.
         """
 
-        if not self._project:
+        if not self._project and not self._api_key:
             # Project is not set. Trying to get it from the environment.
             # See https://github.com/googleapis/python-aiplatform/issues/852
             # See https://github.com/googleapis/google-auth-library-python/issues/924
@@ -95,7 +104,7 @@ class _Config:
                 self._credentials = self._credentials or credentials
                 self._project = project
 
-        if not self._credentials:
+        if not self._credentials and not self._api_key:
             credentials, _ = google.auth.default()
             self._credentials = credentials
 
@@ -108,8 +117,10 @@ class _Config:
         self._network = None
         self._service_account = None
         self._api_endpoint = None
+        self._api_key = None
         self._api_transport = None
         self._request_metadata = None
+        self._resource_type = None
 
     def init(
         self,
@@ -127,6 +138,7 @@ class _Config:
         network: Optional[str] = None,
         service_account: Optional[str] = None,
         api_endpoint: Optional[str] = None,
+        api_key: Optional[str] = None,
         api_transport: Optional[str] = None,
         request_metadata: Optional[Sequence[Tuple[str, str]]] = None,
     ):
@@ -187,6 +199,9 @@ class _Config:
             api_endpoint (str):
                 Optional. The desired API endpoint,
                 e.g., us-central1-aiplatform.googleapis.com
+            api_key (str):
+                Optional. The API key to use for service calls.
+                NOTE: Not all services support API keys.
             api_transport (str):
                 Optional. The transport method which is either 'grpc' or 'rest'.
                 NOTE: "rest" transport functionality is currently in a
@@ -242,6 +257,9 @@ class _Config:
             self._service_account = service_account
         if request_metadata is not None:
             self._request_metadata = request_metadata
+        if api_key is not None:
+            self._api_key = api_key
+        self._resource_type = None
 
         # Finally, perform secondary state updates
         if experiment_tensorboard and not isinstance(experiment_tensorboard, bool):
@@ -294,6 +312,11 @@ class _Config:
         return self._api_endpoint
 
     @property
+    def api_key(self) -> Optional[str]:
+        """API Key, if provided."""
+        return self._api_key
+
+    @property
     def project(self) -> str:
         """Default project."""
         if self._project:
@@ -314,7 +337,7 @@ class _Config:
         except GoogleAuthError as exc:
             raise GoogleAuthError(project_not_found_exception_str) from exc
 
-        if not project_id:
+        if not project_id and not self.api_key:
             raise ValueError(project_not_found_exception_str)
 
         return project_id
@@ -370,11 +393,29 @@ class _Config:
         """Default experiment name, if provided."""
         return metadata._experiment_tracker.experiment_name
 
+    def get_resource_type(self) -> _Product:
+        """Returns the resource type from environment variables."""
+        if self._resource_type:
+            return self._resource_type
+
+        vertex_product = os.getenv("VERTEX_PRODUCT")
+        product_mapping = {
+            "COLAB_ENTERPRISE": _Product.COLAB_ENTERPRISE,
+            "WORKBENCH_CUSTOM_CONTAINER": _Product.WORKBENCH_CUSTOM_CONTAINER,
+            "WORKBENCH_INSTANCE": _Product.WORKBENCH_INSTANCE,
+        }
+
+        if vertex_product in product_mapping:
+            self._resource_type = product_mapping[vertex_product]
+
+        return self._resource_type
+
     def get_client_options(
         self,
         location_override: Optional[str] = None,
         prediction_client: bool = False,
         api_base_path_override: Optional[str] = None,
+        api_key: Optional[str] = None,
         api_path_override: Optional[str] = None,
     ) -> client_options.ClientOptions:
         """Creates GAPIC client_options using location and type.
@@ -386,6 +427,7 @@ class _Config:
                 Vertex AI.
             prediction_client (str): Optional. flag to use a prediction endpoint.
             api_base_path_override (str): Optional. Override default API base path.
+            api_key (str): Optional. API key to use for the client.
             api_path_override (str): Optional. Override default api path.
         Returns:
             clients_options (google.api_core.client_options.ClientOptions):
@@ -419,6 +461,11 @@ class _Config:
                 else api_path_override
             )
 
+        # Project/location take precedence over api_key
+        if api_key and not self._project:
+            return client_options.ClientOptions(
+                api_endpoint=api_endpoint, api_key=api_key
+            )
         return client_options.ClientOptions(api_endpoint=api_endpoint)
 
     def common_location_path(
@@ -451,6 +498,7 @@ class _Config:
         location_override: Optional[str] = None,
         prediction_client: bool = False,
         api_base_path_override: Optional[str] = None,
+        api_key: Optional[str] = None,
         api_path_override: Optional[str] = None,
         appended_user_agent: Optional[List[str]] = None,
         appended_gapic_version: Optional[str] = None,
@@ -465,6 +513,7 @@ class _Config:
                 Optional. Custom auth credentials. If not provided will use the current config.
             location_override (str): Optional. location override.
             prediction_client (str): Optional. flag to use a prediction endpoint.
+            api_key (str): Optional. API key to use for the client.
             api_base_path_override (str): Optional. Override default api base path.
             api_path_override (str): Optional. Override default api path.
             appended_user_agent (List[str]):
@@ -489,6 +538,10 @@ class _Config:
         except Exception:  # pylint: disable=broad-exception-caught
             pass
 
+        resource_type = self.get_resource_type()
+        if resource_type:
+            gapic_version += f"+environment+{resource_type.value}"
+
         if telemetry._tool_names_to_append:
             # Must append to gapic_version due to b/259738581.
             gapic_version = f"{gapic_version}+tools+{'+'.join(telemetry._tool_names_to_append[::-1])}"
@@ -507,6 +560,7 @@ class _Config:
             "client_options": self.get_client_options(
                 location_override=location_override,
                 prediction_client=prediction_client,
+                api_key=api_key,
                 api_base_path_override=api_base_path_override,
                 api_path_override=api_path_override,
             ),

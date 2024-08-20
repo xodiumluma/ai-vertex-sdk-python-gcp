@@ -47,6 +47,7 @@ from google.api_core import operation
 from google.api_core import operation_async  # type: ignore
 from google.api_core import operations_v1
 from google.api_core import path_template
+from google.api_core import retry as retries
 from google.auth import credentials as ga_credentials
 from google.auth.exceptions import MutualTLSChannelError
 from google.cloud.aiplatform_v1beta1.services.schedule_service import (
@@ -78,6 +79,7 @@ from google.cloud.aiplatform_v1beta1.types import pipeline_failure_policy
 from google.cloud.aiplatform_v1beta1.types import pipeline_job
 from google.cloud.aiplatform_v1beta1.types import pipeline_service
 from google.cloud.aiplatform_v1beta1.types import pipeline_state
+from google.cloud.aiplatform_v1beta1.types import reservation_affinity
 from google.cloud.aiplatform_v1beta1.types import schedule
 from google.cloud.aiplatform_v1beta1.types import schedule as gca_schedule
 from google.cloud.aiplatform_v1beta1.types import schedule_service
@@ -1374,27 +1376,23 @@ async def test_create_schedule_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.create_schedule
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.create_schedule(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.create_schedule(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -1711,8 +1709,9 @@ def test_delete_schedule_use_cached_wrapped_rpc():
         # Establish that the underlying gRPC stub method was called.
         assert mock_rpc.call_count == 1
 
-        # Operation methods build a cached wrapper on first rpc call
-        # subsequent calls should use the cached wrapper
+        # Operation methods call wrapper_fn to build a cached
+        # client._transport.operations_client instance on first rpc call.
+        # Subsequent calls should use the cached wrapper
         wrapper_fn.reset_mock()
 
         client.delete_schedule(request)
@@ -1766,31 +1765,28 @@ async def test_delete_schedule_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.delete_schedule
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.delete_schedule(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
-        # Operation methods build a cached wrapper on first rpc call
-        # subsequent calls should use the cached wrapper
+        # Operation methods call wrapper_fn to build a cached
+        # client._transport.operations_client instance on first rpc call.
+        # Subsequent calls should use the cached wrapper
         wrapper_fn.reset_mock()
 
         await client.delete_schedule(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -2158,27 +2154,23 @@ async def test_get_schedule_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.get_schedule
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.get_schedule(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.get_schedule(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -2543,27 +2535,23 @@ async def test_list_schedules_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.list_schedules
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.list_schedules(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.list_schedules(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -2786,12 +2774,16 @@ def test_list_schedules_pager(transport_name: str = "grpc"):
         )
 
         expected_metadata = ()
+        retry = retries.Retry()
+        timeout = 5
         expected_metadata = tuple(expected_metadata) + (
             gapic_v1.routing_header.to_grpc_metadata((("parent", ""),)),
         )
-        pager = client.list_schedules(request={})
+        pager = client.list_schedules(request={}, retry=retry, timeout=timeout)
 
         assert pager._metadata == expected_metadata
+        assert pager._retry == retry
+        assert pager._timeout == timeout
 
         results = list(pager)
         assert len(results) == 6
@@ -3095,27 +3087,23 @@ async def test_pause_schedule_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.pause_schedule
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.pause_schedule(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.pause_schedule(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -3448,27 +3436,23 @@ async def test_resume_schedule_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.resume_schedule
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.resume_schedule(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.resume_schedule(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -3836,27 +3820,23 @@ async def test_update_schedule_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.update_schedule
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.update_schedule(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.update_schedule(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -4192,6 +4172,8 @@ def test_create_schedule_rest(request_type):
                 "template_metadata": {"version": "version_value"},
                 "schedule_name": "schedule_name_value",
                 "preflight_validations": True,
+                "satisfies_pzs": True,
+                "satisfies_pzi": True,
             },
             "pipeline_job_id": "pipeline_job_id_value",
         },
@@ -4224,6 +4206,14 @@ def test_create_schedule_rest(request_type):
                                         "accelerator_type": 1,
                                         "accelerator_count": 1805,
                                         "tpu_topology": "tpu_topology_value",
+                                        "reservation_affinity": {
+                                            "reservation_affinity_type": 1,
+                                            "key": "key_value",
+                                            "values": [
+                                                "values_value1",
+                                                "values_value2",
+                                            ],
+                                        },
                                     },
                                     "starting_replica_count": 2355,
                                     "max_replica_count": 1805,
@@ -4363,6 +4353,7 @@ def test_create_schedule_rest(request_type):
                 "create_time": {},
                 "update_time": {},
                 "labels": {},
+                "encryption_spec": {},
             },
             "notebook_execution_job_id": "notebook_execution_job_id_value",
         },
@@ -4599,7 +4590,7 @@ def test_create_schedule_rest_required_fields(
 
             response = client.create_schedule(request)
 
-            expected_params = []
+            expected_params = [("$alt", "json;enum-encoding=int")]
             actual_params = req.call_args.kwargs["params"]
             assert expected_params == actual_params
 
@@ -4908,7 +4899,7 @@ def test_delete_schedule_rest_required_fields(
 
             response = client.delete_schedule(request)
 
-            expected_params = []
+            expected_params = [("$alt", "json;enum-encoding=int")]
             actual_params = req.call_args.kwargs["params"]
             assert expected_params == actual_params
 
@@ -5228,7 +5219,7 @@ def test_get_schedule_rest_required_fields(
 
             response = client.get_schedule(request)
 
-            expected_params = []
+            expected_params = [("$alt", "json;enum-encoding=int")]
             actual_params = req.call_args.kwargs["params"]
             assert expected_params == actual_params
 
@@ -5540,7 +5531,7 @@ def test_list_schedules_rest_required_fields(
 
             response = client.list_schedules(request)
 
-            expected_params = []
+            expected_params = [("$alt", "json;enum-encoding=int")]
             actual_params = req.call_args.kwargs["params"]
             assert expected_params == actual_params
 
@@ -5903,7 +5894,7 @@ def test_pause_schedule_rest_required_fields(
 
             response = client.pause_schedule(request)
 
-            expected_params = []
+            expected_params = [("$alt", "json;enum-encoding=int")]
             actual_params = req.call_args.kwargs["params"]
             assert expected_params == actual_params
 
@@ -6191,7 +6182,7 @@ def test_resume_schedule_rest_required_fields(
 
             response = client.resume_schedule(request)
 
-            expected_params = []
+            expected_params = [("$alt", "json;enum-encoding=int")]
             actual_params = req.call_args.kwargs["params"]
             assert expected_params == actual_params
 
@@ -6472,6 +6463,8 @@ def test_update_schedule_rest(request_type):
                 "template_metadata": {"version": "version_value"},
                 "schedule_name": "schedule_name_value",
                 "preflight_validations": True,
+                "satisfies_pzs": True,
+                "satisfies_pzi": True,
             },
             "pipeline_job_id": "pipeline_job_id_value",
         },
@@ -6504,6 +6497,14 @@ def test_update_schedule_rest(request_type):
                                         "accelerator_type": 1,
                                         "accelerator_count": 1805,
                                         "tpu_topology": "tpu_topology_value",
+                                        "reservation_affinity": {
+                                            "reservation_affinity_type": 1,
+                                            "key": "key_value",
+                                            "values": [
+                                                "values_value1",
+                                                "values_value2",
+                                            ],
+                                        },
                                     },
                                     "starting_replica_count": 2355,
                                     "max_replica_count": 1805,
@@ -6643,6 +6644,7 @@ def test_update_schedule_rest(request_type):
                 "create_time": {},
                 "update_time": {},
                 "labels": {},
+                "encryption_spec": {},
             },
             "notebook_execution_job_id": "notebook_execution_job_id_value",
         },
@@ -6876,7 +6878,7 @@ def test_update_schedule_rest_required_fields(
 
             response = client.update_schedule(request)
 
-            expected_params = []
+            expected_params = [("$alt", "json;enum-encoding=int")]
             actual_params = req.call_args.kwargs["params"]
             assert expected_params == actual_params
 
@@ -8032,10 +8034,38 @@ def test_parse_pipeline_job_path():
     assert expected == actual
 
 
+def test_reservation_path():
+    project_id_or_number = "squid"
+    zone = "clam"
+    reservation_name = "whelk"
+    expected = "projects/{project_id_or_number}/zones/{zone}/reservations/{reservation_name}".format(
+        project_id_or_number=project_id_or_number,
+        zone=zone,
+        reservation_name=reservation_name,
+    )
+    actual = ScheduleServiceClient.reservation_path(
+        project_id_or_number, zone, reservation_name
+    )
+    assert expected == actual
+
+
+def test_parse_reservation_path():
+    expected = {
+        "project_id_or_number": "octopus",
+        "zone": "oyster",
+        "reservation_name": "nudibranch",
+    }
+    path = ScheduleServiceClient.reservation_path(**expected)
+
+    # Check that the path construction is reversible.
+    actual = ScheduleServiceClient.parse_reservation_path(path)
+    assert expected == actual
+
+
 def test_schedule_path():
-    project = "squid"
-    location = "clam"
-    schedule = "whelk"
+    project = "cuttlefish"
+    location = "mussel"
+    schedule = "winkle"
     expected = "projects/{project}/locations/{location}/schedules/{schedule}".format(
         project=project,
         location=location,
@@ -8047,9 +8077,9 @@ def test_schedule_path():
 
 def test_parse_schedule_path():
     expected = {
-        "project": "octopus",
-        "location": "oyster",
-        "schedule": "nudibranch",
+        "project": "nautilus",
+        "location": "scallop",
+        "schedule": "abalone",
     }
     path = ScheduleServiceClient.schedule_path(**expected)
 
@@ -8059,7 +8089,7 @@ def test_parse_schedule_path():
 
 
 def test_common_billing_account_path():
-    billing_account = "cuttlefish"
+    billing_account = "squid"
     expected = "billingAccounts/{billing_account}".format(
         billing_account=billing_account,
     )
@@ -8069,7 +8099,7 @@ def test_common_billing_account_path():
 
 def test_parse_common_billing_account_path():
     expected = {
-        "billing_account": "mussel",
+        "billing_account": "clam",
     }
     path = ScheduleServiceClient.common_billing_account_path(**expected)
 
@@ -8079,7 +8109,7 @@ def test_parse_common_billing_account_path():
 
 
 def test_common_folder_path():
-    folder = "winkle"
+    folder = "whelk"
     expected = "folders/{folder}".format(
         folder=folder,
     )
@@ -8089,7 +8119,7 @@ def test_common_folder_path():
 
 def test_parse_common_folder_path():
     expected = {
-        "folder": "nautilus",
+        "folder": "octopus",
     }
     path = ScheduleServiceClient.common_folder_path(**expected)
 
@@ -8099,7 +8129,7 @@ def test_parse_common_folder_path():
 
 
 def test_common_organization_path():
-    organization = "scallop"
+    organization = "oyster"
     expected = "organizations/{organization}".format(
         organization=organization,
     )
@@ -8109,7 +8139,7 @@ def test_common_organization_path():
 
 def test_parse_common_organization_path():
     expected = {
-        "organization": "abalone",
+        "organization": "nudibranch",
     }
     path = ScheduleServiceClient.common_organization_path(**expected)
 
@@ -8119,7 +8149,7 @@ def test_parse_common_organization_path():
 
 
 def test_common_project_path():
-    project = "squid"
+    project = "cuttlefish"
     expected = "projects/{project}".format(
         project=project,
     )
@@ -8129,7 +8159,7 @@ def test_common_project_path():
 
 def test_parse_common_project_path():
     expected = {
-        "project": "clam",
+        "project": "mussel",
     }
     path = ScheduleServiceClient.common_project_path(**expected)
 
@@ -8139,8 +8169,8 @@ def test_parse_common_project_path():
 
 
 def test_common_location_path():
-    project = "whelk"
-    location = "octopus"
+    project = "winkle"
+    location = "nautilus"
     expected = "projects/{project}/locations/{location}".format(
         project=project,
         location=location,
@@ -8151,8 +8181,8 @@ def test_common_location_path():
 
 def test_parse_common_location_path():
     expected = {
-        "project": "oyster",
-        "location": "nudibranch",
+        "project": "scallop",
+        "location": "abalone",
     }
     path = ScheduleServiceClient.common_location_path(**expected)
 

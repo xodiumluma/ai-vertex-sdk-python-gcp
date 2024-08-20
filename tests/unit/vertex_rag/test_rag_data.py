@@ -158,6 +158,18 @@ def import_files_request_eq(returned_request, expected_request):
         returned_request.import_rag_files_config.google_drive_source.resource_ids
         == expected_request.import_rag_files_config.google_drive_source.resource_ids
     )
+    assert (
+        returned_request.import_rag_files_config.slack_source.channels
+        == expected_request.import_rag_files_config.slack_source.channels
+    )
+    assert (
+        returned_request.import_rag_files_config.jira_source.jira_queries
+        == expected_request.import_rag_files_config.jira_source.jira_queries
+    )
+    assert (
+        returned_request.import_rag_files_config.rag_file_parsing_config
+        == expected_request.import_rag_files_config.rag_file_parsing_config
+    )
 
 
 @pytest.mark.usefixtures("google_auth_mock")
@@ -388,6 +400,17 @@ class TestRagDataManagement:
         )
         import_files_request_eq(request, tc.TEST_IMPORT_REQUEST_DRIVE_FOLDER)
 
+    @pytest.mark.parametrize("path", [tc.TEST_DRIVE_FOLDER, tc.TEST_DRIVE_FOLDER_2])
+    def test_prepare_import_files_request_drive_folders_with_pdf_parsing(self, path):
+        request = prepare_import_files_request(
+            corpus_name=tc.TEST_RAG_CORPUS_RESOURCE_NAME,
+            paths=[path],
+            chunk_size=tc.TEST_CHUNK_SIZE,
+            chunk_overlap=tc.TEST_CHUNK_OVERLAP,
+            use_advanced_pdf_parsing=True,
+        )
+        import_files_request_eq(request, tc.TEST_IMPORT_REQUEST_DRIVE_FOLDER_PARSING)
+
     def test_prepare_import_files_request_drive_files(self):
         paths = [tc.TEST_DRIVE_FILE]
         request = prepare_import_files_request(
@@ -420,6 +443,24 @@ class TestRagDataManagement:
                 chunk_overlap=tc.TEST_CHUNK_OVERLAP,
             )
         e.match("path must be a Google Cloud Storage uri or a Google Drive url")
+
+    def test_prepare_import_files_request_slack_source(self):
+        request = prepare_import_files_request(
+            corpus_name=tc.TEST_RAG_CORPUS_RESOURCE_NAME,
+            source=tc.TEST_SLACK_SOURCE,
+            chunk_size=tc.TEST_CHUNK_SIZE,
+            chunk_overlap=tc.TEST_CHUNK_OVERLAP,
+        )
+        import_files_request_eq(request, tc.TEST_IMPORT_REQUEST_SLACK_SOURCE)
+
+    def test_prepare_import_files_request_jira_source(self):
+        request = prepare_import_files_request(
+            corpus_name=tc.TEST_RAG_CORPUS_RESOURCE_NAME,
+            source=tc.TEST_JIRA_SOURCE,
+            chunk_size=tc.TEST_CHUNK_SIZE,
+            chunk_overlap=tc.TEST_CHUNK_OVERLAP,
+        )
+        import_files_request_eq(request, tc.TEST_IMPORT_REQUEST_JIRA_SOURCE)
 
     def test_set_embedding_model_config_set_both_error(self):
         embedding_model_config = rag.EmbeddingModelConfig(

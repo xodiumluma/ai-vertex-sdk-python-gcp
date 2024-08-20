@@ -43,6 +43,7 @@ from google.api_core import gapic_v1
 from google.api_core import grpc_helpers
 from google.api_core import grpc_helpers_async
 from google.api_core import path_template
+from google.api_core import retry as retries
 from google.auth import credentials as ga_credentials
 from google.auth.exceptions import MutualTLSChannelError
 from google.cloud.aiplatform_v1.services.model_garden_service import (
@@ -1264,6 +1265,7 @@ def test_get_publisher_model_non_empty_request_with_auto_populated_field():
     request = model_garden_service.GetPublisherModelRequest(
         name="name_value",
         language_code="language_code_value",
+        hugging_face_token="hugging_face_token_value",
     )
 
     # Mock the actual call within the gRPC stub, and fake the request.
@@ -1279,6 +1281,7 @@ def test_get_publisher_model_non_empty_request_with_auto_populated_field():
         assert args[0] == model_garden_service.GetPublisherModelRequest(
             name="name_value",
             language_code="language_code_value",
+            hugging_face_token="hugging_face_token_value",
         )
 
 
@@ -1375,27 +1378,23 @@ async def test_get_publisher_model_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
         client._client._transport._wrapped_methods[
             client._client._transport.get_publisher_model
-        ] = mock_object
+        ] = mock_rpc
 
         request = {}
         await client.get_publisher_model(request)
 
         # Establish that the underlying gRPC stub method was called.
-        assert mock_object.call_count == 1
+        assert mock_rpc.call_count == 1
 
         await client.get_publisher_model(request)
 
         # Establish that a new wrapper was not created for this call
         assert wrapper_fn.call_count == 0
-        assert mock_object.call_count == 2
+        assert mock_rpc.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -1741,6 +1740,8 @@ def test_get_publisher_model_rest_required_fields(
     # Check that path parameters and body parameters are not mixing in.
     assert not set(unset_fields) - set(
         (
+            "hugging_face_token",
+            "is_hugging_face_model",
             "language_code",
             "view",
         )
@@ -1787,7 +1788,7 @@ def test_get_publisher_model_rest_required_fields(
 
             response = client.get_publisher_model(request)
 
-            expected_params = []
+            expected_params = [("$alt", "json;enum-encoding=int")]
             actual_params = req.call_args.kwargs["params"]
             assert expected_params == actual_params
 
@@ -1801,6 +1802,8 @@ def test_get_publisher_model_rest_unset_required_fields():
     assert set(unset_fields) == (
         set(
             (
+                "huggingFaceToken",
+                "isHuggingFaceModel",
                 "languageCode",
                 "view",
             )
@@ -2515,8 +2518,36 @@ def test_parse_publisher_model_path():
     assert expected == actual
 
 
+def test_reservation_path():
+    project_id_or_number = "oyster"
+    zone = "nudibranch"
+    reservation_name = "cuttlefish"
+    expected = "projects/{project_id_or_number}/zones/{zone}/reservations/{reservation_name}".format(
+        project_id_or_number=project_id_or_number,
+        zone=zone,
+        reservation_name=reservation_name,
+    )
+    actual = ModelGardenServiceClient.reservation_path(
+        project_id_or_number, zone, reservation_name
+    )
+    assert expected == actual
+
+
+def test_parse_reservation_path():
+    expected = {
+        "project_id_or_number": "mussel",
+        "zone": "winkle",
+        "reservation_name": "nautilus",
+    }
+    path = ModelGardenServiceClient.reservation_path(**expected)
+
+    # Check that the path construction is reversible.
+    actual = ModelGardenServiceClient.parse_reservation_path(path)
+    assert expected == actual
+
+
 def test_common_billing_account_path():
-    billing_account = "oyster"
+    billing_account = "scallop"
     expected = "billingAccounts/{billing_account}".format(
         billing_account=billing_account,
     )
@@ -2526,7 +2557,7 @@ def test_common_billing_account_path():
 
 def test_parse_common_billing_account_path():
     expected = {
-        "billing_account": "nudibranch",
+        "billing_account": "abalone",
     }
     path = ModelGardenServiceClient.common_billing_account_path(**expected)
 
@@ -2536,7 +2567,7 @@ def test_parse_common_billing_account_path():
 
 
 def test_common_folder_path():
-    folder = "cuttlefish"
+    folder = "squid"
     expected = "folders/{folder}".format(
         folder=folder,
     )
@@ -2546,7 +2577,7 @@ def test_common_folder_path():
 
 def test_parse_common_folder_path():
     expected = {
-        "folder": "mussel",
+        "folder": "clam",
     }
     path = ModelGardenServiceClient.common_folder_path(**expected)
 
@@ -2556,7 +2587,7 @@ def test_parse_common_folder_path():
 
 
 def test_common_organization_path():
-    organization = "winkle"
+    organization = "whelk"
     expected = "organizations/{organization}".format(
         organization=organization,
     )
@@ -2566,7 +2597,7 @@ def test_common_organization_path():
 
 def test_parse_common_organization_path():
     expected = {
-        "organization": "nautilus",
+        "organization": "octopus",
     }
     path = ModelGardenServiceClient.common_organization_path(**expected)
 
@@ -2576,7 +2607,7 @@ def test_parse_common_organization_path():
 
 
 def test_common_project_path():
-    project = "scallop"
+    project = "oyster"
     expected = "projects/{project}".format(
         project=project,
     )
@@ -2586,7 +2617,7 @@ def test_common_project_path():
 
 def test_parse_common_project_path():
     expected = {
-        "project": "abalone",
+        "project": "nudibranch",
     }
     path = ModelGardenServiceClient.common_project_path(**expected)
 
@@ -2596,8 +2627,8 @@ def test_parse_common_project_path():
 
 
 def test_common_location_path():
-    project = "squid"
-    location = "clam"
+    project = "cuttlefish"
+    location = "mussel"
     expected = "projects/{project}/locations/{location}".format(
         project=project,
         location=location,
@@ -2608,8 +2639,8 @@ def test_common_location_path():
 
 def test_parse_common_location_path():
     expected = {
-        "project": "whelk",
-        "location": "octopus",
+        "project": "winkle",
+        "location": "nautilus",
     }
     path = ModelGardenServiceClient.common_location_path(**expected)
 

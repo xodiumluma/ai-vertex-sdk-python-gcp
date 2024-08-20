@@ -44,8 +44,10 @@ from vertexai.preview.rag.utils import (
 )
 from vertexai.preview.rag.utils.resources import (
     EmbeddingModelConfig,
+    JiraSource,
     RagCorpus,
     RagFile,
+    SlackChannelsSource,
 )
 
 
@@ -59,10 +61,11 @@ def create_corpus(
     Example usage:
     ```
     import vertexai
+    from vertexai.preview import rag
 
     vertexai.init(project="my-project")
 
-    rag_corpus = vertexai.preview.rag.create_corpus(
+    rag_corpus = rag.create_corpus(
         display_name="my-corpus-1",
     )
     ```
@@ -133,6 +136,7 @@ def list_corpora(
     Example usage:
     ```
     import vertexai
+    from vertexai.preview import rag
 
     vertexai.init(project="my-project")
 
@@ -202,10 +206,11 @@ def upload_file(
 
     ```
     import vertexai
+    from vertexai.preview import rag
 
     vertexai.init(project="my-project")
 
-    rag_file = vertexai.preview.rag.upload_file(
+    rag_file = rag.upload_file(
         corpus_name="projects/my-project/locations/us-central1/ragCorpora/my-corpus-1",
         display_name="my_file.txt",
         path="usr/home/my_file.txt",
@@ -270,11 +275,13 @@ def upload_file(
 
 def import_files(
     corpus_name: str,
-    paths: Sequence[str],
+    paths: Optional[Sequence[str]] = None,
+    source: Optional[Union[SlackChannelsSource, JiraSource]] = None,
     chunk_size: int = 1024,
     chunk_overlap: int = 200,
     timeout: int = 600,
     max_embedding_requests_per_min: int = 1000,
+    use_advanced_pdf_parsing: Optional[bool] = False,
 ) -> ImportRagFilesResponse:
     """
     Import files to an existing RagCorpus, wait until completion.
@@ -283,19 +290,55 @@ def import_files(
 
     ```
     import vertexai
+    from vertexai.preview import rag
+    from google.protobuf import timestamp_pb2
 
     vertexai.init(project="my-project")
     # Google Drive example
-    paths = ["https://drive.google.com/file/123", "https://drive.google.com/file/456"]
+    paths = [
+        "https://drive.google.com/file/d/123",
+        "https://drive.google.com/drive/folders/456"
+    ]
     # Google Cloud Storage example
     paths = ["gs://my_bucket/my_files_dir", ...]
 
-    response = vertexai.preview.rag.import_files(
+    response = rag.import_files(
         corpus_name="projects/my-project/locations/us-central1/ragCorpora/my-corpus-1",
         paths=paths,
         chunk_size=512,
         chunk_overlap=100,
     )
+
+    # Slack example
+    start_time = timestamp_pb2.Timestamp()
+    start_time.FromJsonString('2020-12-31T21:33:44Z')
+    end_time = timestamp_pb2.Timestamp()
+    end_time.GetCurrentTime()
+    source = rag.SlackChannelsSource(
+        channels = [
+            SlackChannel("channel1", "api_key1"),
+            SlackChannel("channel2", "api_key2", start_time, end_time)
+        ],
+    )
+    # Jira Example
+    jira_query = rag.JiraQuery(
+        email="xxx@yyy.com",
+        jira_projects=["project1", "project2"],
+        custom_queries=["query1", "query2"],
+        api_key="api_key",
+        server_uri="server.atlassian.net"
+    )
+    source = rag.JiraSource(
+        queries=[jira_query],
+    )
+
+    response = rag.import_files(
+        corpus_name="projects/my-project/locations/us-central1/ragCorpora/my-corpus-1",
+        source=source,
+        chunk_size=512,
+        chunk_overlap=100,
+    )
+
     # Return the number of imported RagFiles after completion.
     print(response.imported_rag_files_count)
 
@@ -304,10 +347,12 @@ def import_files(
         corpus_name: The name of the RagCorpus resource into which to import files.
             Format: ``projects/{project}/locations/{location}/ragCorpora/{rag_corpus}``
             or ``{rag_corpus}``.
-        paths: A list of uris. Elligible uris will be Google Cloud Storage
+        paths: A list of uris. Eligible uris will be Google Cloud Storage
             directory ("gs://my-bucket/my_dir") or a Google Drive url for file
             (https://drive.google.com/file/... or folder
             "https://drive.google.com/corp/drive/folders/...").
+        source: The source of the Slack or Jira import.
+            Must be either a SlackChannelsSource or JiraSource.
         chunk_size: The size of the chunks.
         chunk_overlap: The overlap between chunks.
         max_embedding_requests_per_min:
@@ -320,16 +365,24 @@ def import_files(
             here. If unspecified, a default value of 1,000
             QPM would be used.
         timeout: Default is 600 seconds.
+        use_advanced_pdf_parsing: Whether to use advanced PDF
+            parsing on uploaded files.
     Returns:
         ImportRagFilesResponse.
     """
+    if source is not None and paths is not None:
+        raise ValueError("Only one of source or paths must be passed in at a time")
+    if source is None and paths is None:
+        raise ValueError("One of source or paths must be passed in")
     corpus_name = _gapic_utils.get_corpus_name(corpus_name)
     request = _gapic_utils.prepare_import_files_request(
         corpus_name=corpus_name,
         paths=paths,
+        source=source,
         chunk_size=chunk_size,
         chunk_overlap=chunk_overlap,
         max_embedding_requests_per_min=max_embedding_requests_per_min,
+        use_advanced_pdf_parsing=use_advanced_pdf_parsing,
     )
     client = _gapic_utils.create_rag_data_service_client()
     try:
@@ -342,10 +395,12 @@ def import_files(
 
 async def import_files_async(
     corpus_name: str,
-    paths: Sequence[str],
+    paths: Optional[Sequence[str]] = None,
+    source: Optional[Union[SlackChannelsSource, JiraSource]] = None,
     chunk_size: int = 1024,
     chunk_overlap: int = 200,
     max_embedding_requests_per_min: int = 1000,
+    use_advanced_pdf_parsing: Optional[bool] = False,
 ) -> operation_async.AsyncOperation:
     """
     Import files to an existing RagCorpus asynchronously.
@@ -354,17 +409,52 @@ async def import_files_async(
 
     ```
     import vertexai
+    from vertexai.preview import rag
+    from google.protobuf import timestamp_pb2
 
     vertexai.init(project="my-project")
 
     # Google Drive example
-    paths = ["https://drive.google.com/file/123", "https://drive.google.com/file/456"]
+    paths = [
+        "https://drive.google.com/file/d/123",
+        "https://drive.google.com/drive/folders/456"
+    ]
     # Google Cloud Storage example
     paths = ["gs://my_bucket/my_files_dir", ...]
 
-    response = await vertexai.preview.rag.import_files_async(
+    response = await rag.import_files_async(
         corpus_name="projects/my-project/locations/us-central1/ragCorpora/my-corpus-1",
         paths=paths,
+        chunk_size=512,
+        chunk_overlap=100,
+    )
+
+    # Slack example
+    start_time = timestamp_pb2.Timestamp()
+    start_time.FromJsonString('2020-12-31T21:33:44Z')
+    end_time = timestamp_pb2.Timestamp()
+    end_time.GetCurrentTime()
+    source = rag.SlackChannelsSource(
+        channels = [
+            SlackChannel("channel1", "api_key1"),
+            SlackChannel("channel2", "api_key2", start_time, end_time)
+        ],
+    )
+    # Jira Example
+    jira_query = rag.JiraQuery(
+        email="xxx@yyy.com",
+        jira_projects=["project1", "project2"],
+        custom_queries=["query1", "query2"],
+        api_key="api_key",
+        server_uri="server.atlassian.net"
+    )
+    source = rag.JiraSource(
+        queries=[jira_query],
+    )
+
+    response = await rag.import_files_async(
+        corpus_name="projects/my-project/locations/us-central1/ragCorpora/my-corpus-1",
+        source=source,
         chunk_size=512,
         chunk_overlap=100,
     )
@@ -377,10 +467,12 @@ async def import_files_async(
         corpus_name: The name of the RagCorpus resource into which to import files.
             Format: ``projects/{project}/locations/{location}/ragCorpora/{rag_corpus}``
             or ``{rag_corpus}``.
-        paths: A list of uris. Elligible uris will be Google Cloud Storage
+        paths: A list of uris. Eligible uris will be Google Cloud Storage
             directory ("gs://my-bucket/my_dir") or a Google Drive url for file
             (https://drive.google.com/file/... or folder
             "https://drive.google.com/corp/drive/folders/...").
+        source: The source of the Slack or Jira import.
+            Must be either a SlackChannelsSource or JiraSource.
         chunk_size: The size of the chunks.
         chunk_overlap: The overlap between chunks.
         max_embedding_requests_per_min:
@@ -392,16 +484,24 @@ async def import_files_async(
             page on the project to set an appropriate value
             here. If unspecified, a default value of 1,000
             QPM would be used.
+        use_advanced_pdf_parsing: Whether to use advanced PDF
+            parsing on uploaded files.
     Returns:
         operation_async.AsyncOperation.
     """
+    if source is not None and paths is not None:
+        raise ValueError("Only one of source or paths must be passed in at a time")
+    if source is None and paths is None:
+        raise ValueError("One of source or paths must be passed in")
     corpus_name = _gapic_utils.get_corpus_name(corpus_name)
     request = _gapic_utils.prepare_import_files_request(
         corpus_name=corpus_name,
         paths=paths,
+        source=source,
         chunk_size=chunk_size,
         chunk_overlap=chunk_overlap,
         max_embedding_requests_per_min=max_embedding_requests_per_min,
+        use_advanced_pdf_parsing=use_advanced_pdf_parsing,
     )
     async_client = _gapic_utils.create_rag_data_service_async_client()
     try:
