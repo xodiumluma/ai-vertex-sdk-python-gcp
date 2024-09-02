@@ -27,6 +27,7 @@ from google.cloud.aiplatform.utils import (
 )
 from google.cloud.aiplatform.vertex_ray.util import _validation_utils
 from google.cloud.aiplatform.vertex_ray.util.resources import (
+    AutoscalingSpec,
     Cluster,
     PscIConfig,
     Resources,
@@ -237,6 +238,11 @@ def persistent_resource_to_cluster(
                 custom_image=head_image_uri,
             )
         )
+        if head_resource_pool.autoscaling_spec:
+            worker_node_types[0].autoscaling_spec = AutoscalingSpec(
+                min_replica_count=head_resource_pool.autoscaling_spec.min_replica_count,
+                max_replica_count=head_resource_pool.autoscaling_spec.max_replica_count,
+            )
     for i in range(len(resource_pools) - 1):
         # Convert the second and more resource pools to vertex_ray.Resources,
         # and append then to worker_node_types.
@@ -253,17 +259,27 @@ def persistent_resource_to_cluster(
         if _OFFICIAL_IMAGE in worker_image_uri:
             # Official training image is not custom
             worker_image_uri = None
-        worker_node_types.append(
-            Resources(
-                machine_type=resource_pools[i + 1].machine_spec.machine_type,
-                accelerator_type=accelerator_type,
-                accelerator_count=resource_pools[i + 1].machine_spec.accelerator_count,
-                boot_disk_type=resource_pools[i + 1].disk_spec.boot_disk_type,
-                boot_disk_size_gb=resource_pools[i + 1].disk_spec.boot_disk_size_gb,
-                node_count=resource_pools[i + 1].replica_count,
-                custom_image=worker_image_uri,
-            )
+
+        resource = Resources(
+            machine_type=resource_pools[i + 1].machine_spec.machine_type,
+            accelerator_type=accelerator_type,
+            accelerator_count=resource_pools[i + 1].machine_spec.accelerator_count,
+            boot_disk_type=resource_pools[i + 1].disk_spec.boot_disk_type,
+            boot_disk_size_gb=resource_pools[i + 1].disk_spec.boot_disk_size_gb,
+            node_count=resource_pools[i + 1].replica_count,
+            custom_image=worker_image_uri,
         )
+        if resource_pools[i + 1].autoscaling_spec:
+            resource.autoscaling_spec = AutoscalingSpec(
+                min_replica_count=resource_pools[
+                    i + 1
+                ].autoscaling_spec.min_replica_count,
+                max_replica_count=resource_pools[
+                    i + 1
+                ].autoscaling_spec.max_replica_count,
+            )
+
+        worker_node_types.append(resource)
 
     cluster.head_node_type = head_node_type
     cluster.worker_node_types = worker_node_types
