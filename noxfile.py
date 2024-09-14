@@ -32,6 +32,25 @@ LINT_PATHS = ["docs", "google", "vertexai", "tests", "noxfile.py", "setup.py"]
 
 DEFAULT_PYTHON_VERSION = "3.8"
 
+DOCS_DEPENDENCIES = (
+    "sphinx==5.0.2",
+    "alabaster",
+    "google-cloud-aiplatform[evaluation]",
+    "recommonmark",
+)
+
+DOCFX_DEPENDENCIES = (
+    "gcp-sphinx-docfx-yaml",
+    "sphinxcontrib-applehelp==1.0.4",
+    "sphinxcontrib-devhelp==1.0.2",
+    "sphinxcontrib-htmlhelp==2.0.1",
+    "sphinxcontrib-qthelp==1.0.3",
+    "sphinxcontrib-serializinghtml==1.1.5",
+    "alabaster",
+    "google-cloud-aiplatform[evaluation]",
+    "recommonmark",
+)
+
 UNIT_TEST_PYTHON_VERSIONS = ["3.8", "3.9", "3.10", "3.11", "3.12"]
 UNIT_TEST_STANDARD_DEPENDENCIES = [
     "mock",
@@ -39,6 +58,8 @@ UNIT_TEST_STANDARD_DEPENDENCIES = [
     "pytest",
     "pytest-cov",
     "pytest-asyncio",
+    # Preventing: py.test: error: unrecognized arguments: -n=auto --dist=loadscope
+    "pytest-xdist",
 ]
 UNIT_TEST_EXTERNAL_DEPENDENCIES = []
 UNIT_TEST_LOCAL_DEPENDENCIES = []
@@ -201,11 +222,34 @@ def default(session):
 @nox.session(python=UNIT_TEST_PYTHON_VERSIONS)
 def unit(session):
     """Run the unit test suite."""
+    # First run the minimal GenAI tests
+    unit_genai_minimal_dependencies(session)
+
+    # Then run the default full test suite
     default(session)
 
 
+def unit_genai_minimal_dependencies(session):
+    # Install minimal test dependencies, then install this package in-place.
+
+    standard_deps = UNIT_TEST_STANDARD_DEPENDENCIES + UNIT_TEST_DEPENDENCIES
+    session.install(*standard_deps)
+    session.install("-e", ".")
+
+    # Run py.test against the unit tests.
+    session.run(
+        "py.test",
+        "--quiet",
+        f"--junitxml=unit_{session.python}_sponge_log.xml",
+        # These tests require the PIL module
+        # "--ignore=TestGenerativeModels::test_image_mime_types",
+        os.path.join("tests", "unit", "vertexai", "test_generative_models.py"),
+        *session.posargs,
+    )
+
+
 @nox.session(python="3.10")
-@nox.parametrize("ray", ["2.9.3"])
+@nox.parametrize("ray", ["2.9.3", "2.33.0"])
 def unit_ray(session, ray):
     # Install all test dependencies, then install this package in-place.
 
@@ -349,12 +393,8 @@ def docs(session):
 
     session.install("-e", ".")
     session.install(
-        "sphinx==5.0.2",
-        "alabaster",
-        "immutabledict",
-        "google-cloud-aiplatform[evaluation]",
+        *DOCS_DEPENDENCIES,
         "google-cloud-aiplatform[prediction]",
-        "recommonmark",
     )
 
     shutil.rmtree(os.path.join("docs", "_build"), ignore_errors=True)
@@ -377,15 +417,8 @@ def docfx(session):
 
     session.install("-e", ".")
     session.install(
-        "gcp-sphinx-docfx-yaml",
-        "sphinxcontrib-applehelp==1.0.4",
-        "sphinxcontrib-devhelp==1.0.2",
-        "sphinxcontrib-htmlhelp==2.0.1",
-        "sphinxcontrib-qthelp==1.0.3",
-        "sphinxcontrib-serializinghtml==1.1.5",
-        "alabaster",
+        *DOCFX_DEPENDENCIES,
         "google-cloud-aiplatform[prediction]",
-        "recommonmark",
     )
 
     shutil.rmtree(os.path.join("docs", "_build"), ignore_errors=True)
@@ -419,14 +452,7 @@ def gemini_docs(session):
     """Build the docs for library related to Gemini."""
 
     session.install("-e", ".")
-    session.install(
-        "sphinx==5.0.2",
-        "alabaster",
-        "immutabledict",
-        "google-cloud-aiplatform[evaluation]",
-        "google-cloud-aiplatform[prediction]",
-        "recommonmark",
-    )
+    session.install(*DOCS_DEPENDENCIES)
 
     shutil.rmtree(os.path.join("docs", "_build"), ignore_errors=True)
     session.run(
@@ -447,17 +473,7 @@ def gemini_docfx(session):
     """Build the docfx yaml files for library related to Gemini."""
 
     session.install("-e", ".")
-    session.install(
-        "gcp-sphinx-docfx-yaml",
-        "sphinxcontrib-applehelp==1.0.4",
-        "sphinxcontrib-devhelp==1.0.2",
-        "sphinxcontrib-htmlhelp==2.0.1",
-        "sphinxcontrib-qthelp==1.0.3",
-        "sphinxcontrib-serializinghtml==1.1.5",
-        "alabaster",
-        "google-cloud-aiplatform",
-        "recommonmark",
-    )
+    session.install(*DOCFX_DEPENDENCIES)
 
     shutil.rmtree(os.path.join("docs", "_build"), ignore_errors=True)
     session.run(

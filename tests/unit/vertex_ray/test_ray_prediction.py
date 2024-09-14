@@ -41,7 +41,6 @@ import mock
 import numpy as np
 import pytest
 import ray
-from ray.train import xgboost as ray_xgboost
 import tensorflow as tf
 import torch
 import xgboost
@@ -90,9 +89,14 @@ def ray_sklearn_checkpoint():
 
 @pytest.fixture()
 def ray_xgboost_checkpoint():
-    model = test_prediction_utils.get_xgboost_model()
-    checkpoint = ray_xgboost.XGBoostCheckpoint.from_model(model.get_booster())
-    return checkpoint
+    if ray.__version__ == "2.9.3":
+        from ray.train import xgboost as ray_xgboost
+
+        model = test_prediction_utils.get_xgboost_model()
+        checkpoint = ray_xgboost.XGBoostCheckpoint.from_model(model.get_booster())
+        return checkpoint
+    else:
+        return None
 
 
 @pytest.fixture()
@@ -349,6 +353,7 @@ class TestPredictionFunctionality:
         pickle_dump.assert_called_once()
         gcs_utils_upload_to_gcs.assert_called_once()
 
+    @tc.predictionrayversion
     def test_register_sklearnartifact_uri_is_none_raise_error(
         self, ray_sklearn_checkpoint
     ) -> None:
@@ -361,6 +366,7 @@ class TestPredictionFunctionality:
             )
         assert ve.match(regexp=r".*'artifact_uri' should " "start with 'gs://'.*")
 
+    @tc.predictionrayversion
     def test_register_sklearnartifact_uri_not_gcs_uri_raise_error(
         self, ray_sklearn_checkpoint
     ) -> None:
@@ -374,6 +380,7 @@ class TestPredictionFunctionality:
         assert ve.match(regexp=r".*'artifact_uri' should " "start with 'gs://'.*")
 
     # XGBoost Tests
+    @tc.xgbversion
     @tc.rovminversion
     def test_convert_checkpoint_to_xgboost_raise_exception(
         self, ray_checkpoint_from_dict
@@ -392,6 +399,7 @@ class TestPredictionFunctionality:
             "ray.train.xgboost.XGBoostCheckpoint .*"
         )
 
+    @tc.xgbversion
     def test_convert_checkpoint_to_xgboost_model_succeed(
         self, ray_xgboost_checkpoint
     ) -> None:
@@ -406,6 +414,7 @@ class TestPredictionFunctionality:
         y_pred = model.predict(xgboost.DMatrix(np.array([[1, 2]])))
         assert y_pred[0] is not None
 
+    @tc.xgbversion
     def test_register_xgboost_succeed(
         self,
         ray_xgboost_checkpoint,
@@ -429,6 +438,7 @@ class TestPredictionFunctionality:
         pickle_dump.assert_called_once()
         gcs_utils_upload_to_gcs.assert_called_once()
 
+    @tc.xgbversion
     def test_register_xgboost_initialized_succeed(
         self,
         ray_xgboost_checkpoint,
@@ -455,6 +465,7 @@ class TestPredictionFunctionality:
         pickle_dump.assert_called_once()
         gcs_utils_upload_to_gcs.assert_called_once()
 
+    @tc.xgbversion
     def test_register_xgboostartifact_uri_is_none_raise_error(
         self, ray_xgboost_checkpoint
     ) -> None:
@@ -467,6 +478,7 @@ class TestPredictionFunctionality:
             )
         assert ve.match(regexp=r".*'artifact_uri' should " "start with 'gs://'.*")
 
+    @tc.xgbversion
     def test_register_xgboostartifact_uri_not_gcs_uri_raise_error(
         self, ray_xgboost_checkpoint
     ) -> None:
@@ -489,6 +501,7 @@ class TestPredictionFunctionality:
         with pytest.raises(ValueError):
             prediction_torch.register.get_pytorch_model_from(ray_checkpoint_from_dict)
 
+    @tc.predictionrayversion
     def test_convert_checkpoint_to_pytorch_model_succeed(
         self, ray_torch_checkpoint
     ) -> None:

@@ -67,11 +67,14 @@ class Resources:
 
 @dataclasses.dataclass
 class NodeImages:
-    """
-    Custom images for a ray cluster. We currently support Ray v2.9 and python v3.10.
+    """Custom images for a ray cluster.
+
+    We currently support Ray v2.9 and v2.33 and python v3.10.
     The custom images must be extended from the following base images:
-    "{region}-docker.pkg.dev/vertex-ai/training/ray-cpu.2-9.py310:latest" or
-    "{region}-docker.pkg.dev/vertex-ai/training/ray-gpu.2-9.py310:latest". In
+    "{region}-docker.pkg.dev/vertex-ai/training/ray-cpu.2-9.py310:latest",
+    "{region}-docker.pkg.dev/vertex-ai/training/ray-gpu.2-9.py310:latest",
+    "{region}-docker.pkg.dev/vertex-ai/training/ray-cpu.2-33.py310:latest", or
+    "{region}-docker.pkg.dev/vertex-ai/training/ray-gpu.2-33.py310:latest". In
     order to use custom images, need to specify both head and worker images.
 
     Attributes:
@@ -117,6 +120,11 @@ class Cluster:
             managed in the Vertex API service. For Ray Job API, VPC network is
             not required because cluster connection can be accessed through
             dashboard address.
+        reserved_ip_ranges: A list of names for the reserved IP ranges under
+            the VPC network that can be used for this cluster. If set, we will
+            deploy the cluster within the provided IP ranges. Otherwise, the
+            cluster is deployed to any IP ranges under the provided VPC network.
+            Example: ["vertex-ai-ip-range"].
         service_account: Service account to be used for running Ray programs on
             the cluster.
         state: Describes the cluster state (defined in PersistentResource.State).
@@ -140,6 +148,7 @@ class Cluster:
 
     cluster_resource_name: str = None
     network: str = None
+    reserved_ip_ranges: List[str] = None
     service_account: str = None
     state: PersistentResource.State = None
     python_version: str = None

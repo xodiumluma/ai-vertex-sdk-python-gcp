@@ -52,7 +52,7 @@ from google.cloud.aiplatform.vertex_ray.util._validation_utils import (
 def create_ray_cluster(
     head_node_type: Optional[resources.Resources] = resources.Resources(),
     python_version: Optional[str] = "3.10",
-    ray_version: Optional[str] = "2.9",
+    ray_version: Optional[str] = "2.33",
     network: Optional[str] = None,
     service_account: Optional[str] = None,
     cluster_name: Optional[str] = None,
@@ -61,6 +61,7 @@ def create_ray_cluster(
     enable_metrics_collection: Optional[bool] = True,
     enable_logging: Optional[bool] = True,
     psc_interface_config: Optional[resources.PscIConfig] = None,
+    reserved_ip_ranges: Optional[List[str]] = None,
     labels: Optional[Dict[str, str]] = None,
 ) -> str:
     """Create a ray cluster on the Vertex AI.
@@ -105,7 +106,7 @@ def create_ray_cluster(
         head_node_type: The head node resource. Resources.node_count must be 1.
             If not set, default value of Resources() class will be used.
         python_version: Python version for the ray cluster.
-        ray_version: Ray version for the ray cluster.
+        ray_version: Ray version for the ray cluster. Default is 2.33.0.
         network: Virtual private cloud (VPC) network. For Ray Client, VPC
             peering is required to connect to the Ray Cluster managed in the
             Vertex API service. For Ray Job API, VPC network is not required
@@ -126,6 +127,11 @@ def create_ray_cluster(
         enable_metrics_collection: Enable Ray metrics collection for visualization.
         enable_logging: Enable exporting Ray logs to Cloud Logging.
         psc_interface_config: PSC-I config.
+        reserved_ip_ranges: A list of names for the reserved IP ranges under
+            the VPC network that can be used for this cluster. If set, we will
+            deploy the cluster within the provided IP ranges. Otherwise, the
+            cluster is deployed to any IP ranges under the provided VPC network.
+            Example: ["vertex-ai-ip-range"].
         labels:
             The labels with user-defined metadata to organize Ray cluster.
 
@@ -151,7 +157,7 @@ def create_ray_cluster(
     local_ray_verion = _validation_utils.get_local_ray_version()
     if ray_version != local_ray_verion:
         if custom_images is None and head_node_type.custom_image is None:
-            install_ray_version = "2.9.3"
+            install_ray_version = "2.33.0"
             logging.info(
                 "[Ray on Vertex]: Local runtime has Ray version %s"
                 ", but the requested cluster runtime has %s. Please "
@@ -325,6 +331,7 @@ def create_ray_cluster(
         labels=labels,
         resource_runtime_spec=resource_runtime_spec,
         psc_interface_config=gapic_psc_interface_config,
+        reserved_ip_ranges=reserved_ip_ranges,
     )
 
     location = initializer.global_config.location

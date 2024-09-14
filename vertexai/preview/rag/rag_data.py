@@ -48,6 +48,8 @@ from vertexai.preview.rag.utils.resources import (
     RagCorpus,
     RagFile,
     SlackChannelsSource,
+    VertexFeatureStore,
+    Weaviate,
 )
 
 
@@ -55,6 +57,7 @@ def create_corpus(
     display_name: Optional[str] = None,
     description: Optional[str] = None,
     embedding_model_config: Optional[EmbeddingModelConfig] = None,
+    vector_db: Optional[Union[Weaviate, VertexFeatureStore]] = None,
 ) -> RagCorpus:
     """Creates a new RagCorpus resource.
 
@@ -76,6 +79,8 @@ def create_corpus(
             consist of any UTF-8 characters.
         description: The description of the RagCorpus.
         embedding_model_config: The embedding model config.
+        vector_db: The vector db config of the RagCorpus. If unspecified, the
+            default database Spanner is used.
     Returns:
         RagCorpus.
     Raises:
@@ -88,9 +93,14 @@ def create_corpus(
 
     rag_corpus = GapicRagCorpus(display_name=display_name, description=description)
     if embedding_model_config:
-        rag_corpus = _gapic_utils.set_embedding_model_config(
-            embedding_model_config,
-            rag_corpus,
+        _gapic_utils.set_embedding_model_config(
+            embedding_model_config=embedding_model_config,
+            rag_corpus=rag_corpus,
+        )
+    if vector_db is not None:
+        _gapic_utils.set_vector_db(
+            vector_db=vector_db,
+            rag_corpus=rag_corpus,
         )
 
     request = CreateRagCorpusRequest(

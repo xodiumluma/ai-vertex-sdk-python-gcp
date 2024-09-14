@@ -181,6 +181,34 @@ class LogdirLoaderTest(tf.test.TestCase):
         # A second load should indicate no new data for the run.
         self.assertEqual(self._extract_run_to_tags(loader.get_run_events()), {".": []})
 
+    def test_profile_logdir(self):
+        logdir = self.get_temp_dir()
+        profile_dir = os.path.join(logdir, "foo/plugins/profile")
+        os.makedirs(profile_dir, exist_ok=True)
+        tempfile.NamedTemporaryFile(
+            prefix="bar", suffix=".xplane.pb", dir=profile_dir, delete=False
+        )
+        self.assertNotEmpty(os.listdir(profile_dir))
+        loader = self._create_logdir_loader(logdir)
+        loader.synchronize_runs()
+        self.assertEqual(
+            self._extract_run_to_tags(loader.get_run_events()), {"foo": []}
+        )
+
+    def test_profile_subdirectories(self):
+        logdir = self.get_temp_dir()
+        profile_dir = os.path.join(logdir, "foo/bar/subdir/plugins/profile")
+        os.makedirs(profile_dir, exist_ok=True)
+        tempfile.NamedTemporaryFile(
+            prefix="bar", suffix=".xplane.pb", dir=profile_dir, delete=False
+        )
+        self.assertNotEmpty(os.listdir(profile_dir))
+        loader = self._create_logdir_loader(logdir)
+        loader.synchronize_runs()
+        self.assertEqual(
+            self._extract_run_to_tags(loader.get_run_events()), {"foo/bar/subdir": []}
+        )
+
     def test_multiple_writes_to_logdir(self):
         logdir = self.get_temp_dir()
         with FileWriter(os.path.join(logdir, "a")) as writer:
@@ -201,15 +229,15 @@ class LogdirLoaderTest(tf.test.TestCase):
             {
                 "a": ["tag_a"],
                 "b": ["tag_b"],
-                "b-x": ["tag_b_x"],
-                "b-z": ["tag_b_z"],
+                "b/x": ["tag_b_x"],
+                "b_z": ["tag_b_z"],
                 "c": ["tag_c"],
             },
         )
         # A second load should indicate no new data.
         self.assertEqual(
             self._extract_run_to_tags(loader.get_run_events()),
-            {"a": [], "b": [], "b-x": [], "b-z": [], "c": []},
+            {"a": [], "b": [], "b/x": [], "b_z": [], "c": []},
         )
         # Write some new data to both new and pre-existing event files.
         with FileWriter(os.path.join(logdir, "a"), filename_suffix=".other") as writer:
@@ -228,8 +256,8 @@ class LogdirLoaderTest(tf.test.TestCase):
             {
                 "a": ["tag_a_2", "tag_a_3", "tag_a_4"],
                 "b": [],
-                "b-x": ["tag_b_x_2"],
-                "b-z": [],
+                "b/x": ["tag_b_x_2"],
+                "b_z": [],
                 "c": ["tag_c_2"],
             },
         )
