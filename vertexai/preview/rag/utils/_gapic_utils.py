@@ -38,6 +38,7 @@ from google.cloud.aiplatform.utils import (
 )
 from vertexai.preview.rag.utils.resources import (
     EmbeddingModelConfig,
+    Pinecone,
     RagCorpus,
     RagFile,
     SlackChannelsSource,
@@ -98,8 +99,8 @@ def convert_gapic_to_embedding_model_config(
 
 def convert_gapic_to_vector_db(
     gapic_vector_db: RagVectorDbConfig,
-) -> Union[Weaviate, VertexFeatureStore]:
-    """Convert Gapic RagVectorDbConfig to Weaviate or VertexFeatureStore."""
+) -> Union[Weaviate, VertexFeatureStore, Pinecone]:
+    """Convert Gapic RagVectorDbConfig to Weaviate, VertexFeatureStore, or Pinecone."""
     if gapic_vector_db.__contains__("weaviate"):
         return Weaviate(
             weaviate_http_endpoint=gapic_vector_db.weaviate.http_endpoint,
@@ -109,6 +110,11 @@ def convert_gapic_to_vector_db(
     elif gapic_vector_db.__contains__("vertex_feature_store"):
         return VertexFeatureStore(
             resource_name=gapic_vector_db.vertex_feature_store.feature_view_resource_name,
+        )
+    elif gapic_vector_db.__contains__("pinecone"):
+        return Pinecone(
+            index_name=gapic_vector_db.pinecone.index_name,
+            api_key=gapic_vector_db.api_auth.api_key_config.api_key_secret_version,
         )
     else:
         return None
@@ -241,6 +247,7 @@ def prepare_import_files_request(
     chunk_overlap: int = 200,
     max_embedding_requests_per_min: int = 1000,
     use_advanced_pdf_parsing: bool = False,
+    partial_failures_sink: Optional[str] = None,
 ) -> ImportRagFilesRequest:
     if len(corpus_name.split("/")) != 6:
         raise ValueError(
@@ -282,6 +289,22 @@ def prepare_import_files_request(
                 resource_ids=resource_ids,
             )
             import_rag_files_config.google_drive_source = google_drive_source
+
+    if partial_failures_sink is not None:
+        if partial_failures_sink.startswith("gs://"):
+            import_rag_files_config.partial_failure_gcs_sink.output_uri_prefix = (
+                partial_failures_sink
+            )
+        elif partial_failures_sink.startswith(
+            "bq://"
+        ) or partial_failures_sink.startswith("bigquery://"):
+            import_rag_files_config.partial_failure_bigquery_sink.output_uri = (
+                partial_failures_sink
+            )
+        else:
+            raise ValueError(
+                "if provided, partial_failures_sink must be a GCS path or a BigQuery table."
+            )
 
     request = ImportRagFilesRequest(
         parent=corpus_name, import_rag_files_config=import_rag_files_config
@@ -395,7 +418,7 @@ def set_embedding_model_config(
 
 
 def set_vector_db(
-    vector_db: Union[Weaviate, VertexFeatureStore],
+    vector_db: Union[Weaviate, VertexFeatureStore, Pinecone],
     rag_corpus: GapicRagCorpus,
 ) -> None:
     """Sets the vector db configuration for the rag corpus."""
@@ -423,5 +446,21 @@ def set_vector_db(
                 feature_view_resource_name=resource_name,
             ),
         )
+    elif isinstance(vector_db, Pinecone):
+        index_name = vector_db.index_name
+        api_key = vector_db.api_key
+
+        rag_corpus.rag_vector_db_config = RagVectorDbConfig(
+            pinecone=RagVectorDbConfig.Pinecone(
+                index_name=index_name,
+            ),
+            api_auth=api_auth.ApiAuth(
+                api_key_config=api_auth.ApiAuth.ApiKeyConfig(
+                    api_key_secret_version=api_key
+                ),
+            ),
+        )
     else:
-        raise TypeError("vector_db must be a Weaviate or VertexFeatureStore.")
+        raise TypeError(
+            "vector_db must be a Weaviate, VertexFeatureStore, or Pinecone."
+        )
