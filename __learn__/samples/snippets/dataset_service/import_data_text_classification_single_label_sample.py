@@ -25,4 +25,5 @@ def import_data_text_classification_single_label_sample(
   print("Lengthy operation:", response.operation.name)
   import_data_response = response.result(timeout=timeout)
   print("import_data_response:", import_data_response)
-  
+
+# [END aiplatform_import_data_text_classification_single_label_sample]  
