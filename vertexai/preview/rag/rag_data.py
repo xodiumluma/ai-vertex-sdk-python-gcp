@@ -48,6 +48,8 @@ from vertexai.preview.rag.utils.resources import (
     Pinecone,
     RagCorpus,
     RagFile,
+    RagManagedDb,
+    SharePointSources,
     SlackChannelsSource,
     VertexFeatureStore,
     VertexVectorSearch,
@@ -60,7 +62,7 @@ def create_corpus(
     description: Optional[str] = None,
     embedding_model_config: Optional[EmbeddingModelConfig] = None,
     vector_db: Optional[
-        Union[Weaviate, VertexFeatureStore, VertexVectorSearch, Pinecone]
+        Union[Weaviate, VertexFeatureStore, VertexVectorSearch, Pinecone, RagManagedDb]
     ] = None,
 ) -> RagCorpus:
     """Creates a new RagCorpus resource.
@@ -101,11 +103,10 @@ def create_corpus(
             embedding_model_config=embedding_model_config,
             rag_corpus=rag_corpus,
         )
-    if vector_db is not None:
-        _gapic_utils.set_vector_db(
-            vector_db=vector_db,
-            rag_corpus=rag_corpus,
-        )
+    _gapic_utils.set_vector_db(
+        vector_db=vector_db,
+        rag_corpus=rag_corpus,
+    )
 
     request = CreateRagCorpusRequest(
         parent=parent,
@@ -290,7 +291,7 @@ def upload_file(
 def import_files(
     corpus_name: str,
     paths: Optional[Sequence[str]] = None,
-    source: Optional[Union[SlackChannelsSource, JiraSource]] = None,
+    source: Optional[Union[SlackChannelsSource, JiraSource, SharePointSources]] = None,
     chunk_size: int = 1024,
     chunk_overlap: int = 200,
     timeout: int = 600,
@@ -352,6 +353,19 @@ def import_files(
         source=source,
         chunk_size=512,
         chunk_overlap=100,
+    )
+
+    # SharePoint Example.
+    sharepoint_query = rag.SharePointSource(
+        sharepoint_folder_path="https://my-sharepoint-site.com/my-folder",
+        sharepoint_site_name="my-sharepoint-site.com",
+        client_id="my-client-id",
+        client_secret="my-client-secret",
+        tenant_id="my-tenant-id",
+        drive_id="my-drive-id",
+    )
+    source = rag.SharePointSources(
+        share_point_sources=[sharepoint_query],
     )
 
     # Return the number of imported RagFiles after completion.
@@ -420,7 +434,7 @@ def import_files(
 async def import_files_async(
     corpus_name: str,
     paths: Optional[Sequence[str]] = None,
-    source: Optional[Union[SlackChannelsSource, JiraSource]] = None,
+    source: Optional[Union[SlackChannelsSource, JiraSource, SharePointSources]] = None,
     chunk_size: int = 1024,
     chunk_overlap: int = 200,
     max_embedding_requests_per_min: int = 1000,
@@ -482,6 +496,19 @@ async def import_files_async(
         source=source,
         chunk_size=512,
         chunk_overlap=100,
+    )
+
+    # SharePoint Example.
+    sharepoint_query = rag.SharePointSource(
+        sharepoint_folder_path="https://my-sharepoint-site.com/my-folder",
+        sharepoint_site_name="my-sharepoint-site.com",
+        client_id="my-client-id",
+        client_secret="my-client-secret",
+        tenant_id="my-tenant-id",
+        drive_id="my-drive-id",
+    )
+    source = rag.SharePointSources(
+        share_point_sources=[sharepoint_query],
     )
 
     # Get the result.

@@ -26,6 +26,7 @@ from google.cloud.aiplatform_v1beta1 import (
     RagFileParsingConfig,
     RagCorpus as GapicRagCorpus,
     RagFile as GapicRagFile,
+    SharePointSources as GapicSharePointSources,
     SlackSource as GapicSlackSource,
     JiraSource as GapicJiraSource,
     RagVectorDbConfig,
@@ -41,6 +42,8 @@ from vertexai.preview.rag.utils.resources import (
     Pinecone,
     RagCorpus,
     RagFile,
+    RagManagedDb,
+    SharePointSources,
     SlackChannelsSource,
     JiraSource,
     VertexFeatureStore,
@@ -105,6 +108,13 @@ def _check_weaviate(gapic_vector_db: RagVectorDbConfig) -> bool:
         return gapic_vector_db.weaviate.ByteSize() > 0
 
 
+def _check_rag_managed_db(gapic_vector_db: RagVectorDbConfig) -> bool:
+    try:
+        return gapic_vector_db.__contains__("rag_managed_db")
+    except AttributeError:
+        return gapic_vector_db.rag_managed_db.ByteSize() > 0
+
+
 def _check_vertex_feature_store(gapic_vector_db: RagVectorDbConfig) -> bool:
     try:
         return gapic_vector_db.__contains__("vertex_feature_store")
@@ -128,8 +138,8 @@ def _check_vertex_vector_search(gapic_vector_db: RagVectorDbConfig) -> bool:
 
 def convert_gapic_to_vector_db(
     gapic_vector_db: RagVectorDbConfig,
-) -> Union[Weaviate, VertexFeatureStore, VertexVectorSearch, Pinecone]:
-    """Convert Gapic RagVectorDbConfig to Weaviate, VertexFeatureStore, VertexVectorSearch, or Pinecone."""
+) -> Union[Weaviate, VertexFeatureStore, VertexVectorSearch, Pinecone, RagManagedDb]:
+    """Convert Gapic RagVectorDbConfig to Weaviate, VertexFeatureStore, VertexVectorSearch, RagManagedDb, or Pinecone."""
     if _check_weaviate(gapic_vector_db):
         return Weaviate(
             weaviate_http_endpoint=gapic_vector_db.weaviate.http_endpoint,
@@ -150,6 +160,8 @@ def convert_gapic_to_vector_db(
             index_endpoint=gapic_vector_db.vertex_vector_search.index_endpoint,
             index=gapic_vector_db.vertex_vector_search.index,
         )
+    elif _check_rag_managed_db(gapic_vector_db):
+        return RagManagedDb()
     else:
         return None
 
@@ -222,7 +234,7 @@ def convert_path_to_resource_id(
 
 
 def convert_source_for_rag_import(
-    source: Union[SlackChannelsSource, JiraSource]
+    source: Union[SlackChannelsSource, JiraSource, SharePointSources]
 ) -> Union[GapicSlackSource, GapicJiraSource]:
     """Converts a SlackChannelsSource or JiraSource to a GapicSlackSource or GapicJiraSource."""
     if isinstance(source, SlackChannelsSource):
@@ -269,14 +281,57 @@ def convert_source_for_rag_import(
         return GapicJiraSource(
             jira_queries=result_source_queries,
         )
+    elif isinstance(source, SharePointSources):
+        result_source_share_point_sources = []
+        for share_point_source in source.share_point_sources:
+            sharepoint_folder_path = share_point_source.sharepoint_folder_path
+            sharepoint_folder_id = share_point_source.sharepoint_folder_id
+            drive_name = share_point_source.drive_name
+            drive_id = share_point_source.drive_id
+            client_id = share_point_source.client_id
+            client_secret = share_point_source.client_secret
+            tenant_id = share_point_source.tenant_id
+            sharepoint_site_name = share_point_source.sharepoint_site_name
+            result_share_point_source = GapicSharePointSources.SharePointSource(
+                client_id=client_id,
+                client_secret=api_auth.ApiAuth.ApiKeyConfig(
+                    api_key_secret_version=client_secret
+                ),
+                tenant_id=tenant_id,
+                sharepoint_site_name=sharepoint_site_name,
+            )
+            if sharepoint_folder_path is not None and sharepoint_folder_id is not None:
+                raise ValueError(
+                    "sharepoint_folder_path and sharepoint_folder_id cannot both be set."
+                )
+            elif sharepoint_folder_path is not None:
+                result_share_point_source.sharepoint_folder_path = (
+                    sharepoint_folder_path
+                )
+            elif sharepoint_folder_id is not None:
+                result_share_point_source.sharepoint_folder_id = sharepoint_folder_id
+            if drive_name is not None and drive_id is not None:
+                raise ValueError("drive_name and drive_id cannot both be set.")
+            elif drive_name is not None:
+                result_share_point_source.drive_name = drive_name
+            elif drive_id is not None:
+                result_share_point_source.drive_id = drive_id
+            else:
+                raise ValueError("Either drive_name and drive_id must be set.")
+            result_source_share_point_sources.append(result_share_point_source)
+        return GapicSharePointSources(
+            share_point_sources=result_source_share_point_sources,
+        )
     else:
-        raise TypeError("source must be a SlackChannelsSource or JiraSource.")
+        raise TypeError(
+            "source must be a SlackChannelsSource or JiraSource or SharePointSources."
+        )
 
 
 def prepare_import_files_request(
     corpus_name: str,
     paths: Optional[Sequence[str]] = None,
-    source: Optional[Union[SlackChannelsSource, JiraSource]] = None,
+    source: Optional[Union[SlackChannelsSource, JiraSource, SharePointSources]] = None,
     chunk_size: int = 1024,
     chunk_overlap: int = 200,
     max_embedding_requests_per_min: int = 1000,
@@ -307,6 +362,8 @@ def prepare_import_files_request(
             import_rag_files_config.slack_source = gapic_source
         if isinstance(gapic_source, GapicJiraSource):
             import_rag_files_config.jira_source = gapic_source
+        if isinstance(gapic_source, GapicSharePointSources):
+            import_rag_files_config.share_point_sources = gapic_source
     else:
         uris = []
         resource_ids = []
@@ -452,11 +509,17 @@ def set_embedding_model_config(
 
 
 def set_vector_db(
-    vector_db: Union[Weaviate, VertexFeatureStore, VertexVectorSearch, Pinecone],
+    vector_db: Union[
+        Weaviate, VertexFeatureStore, VertexVectorSearch, Pinecone, RagManagedDb, None
+    ],
     rag_corpus: GapicRagCorpus,
 ) -> None:
     """Sets the vector db configuration for the rag corpus."""
-    if isinstance(vector_db, Weaviate):
+    if vector_db is None or isinstance(vector_db, RagManagedDb):
+        rag_corpus.rag_vector_db_config = RagVectorDbConfig(
+            rag_managed_db=RagVectorDbConfig.RagManagedDb(),
+        )
+    elif isinstance(vector_db, Weaviate):
         http_endpoint = vector_db.weaviate_http_endpoint
         collection_name = vector_db.collection_name
         api_key = vector_db.api_key
@@ -506,5 +569,5 @@ def set_vector_db(
         )
     else:
         raise TypeError(
-            "vector_db must be a Weaviate, VertexFeatureStore, VertexVectorSearch, or Pinecone."
+            "vector_db must be a Weaviate, VertexFeatureStore, VertexVectorSearch, RagManagedDb, or Pinecone."
         )
