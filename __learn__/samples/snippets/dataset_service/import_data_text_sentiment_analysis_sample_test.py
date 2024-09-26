@@ -8,10 +8,17 @@ GCS_SOURCE = (
   "gs://cloud-samples-data-us-central1/ai-platform/natural_language/"
   "sentiment_analysis/dataset_ucaip_tst_dataset_10.csv"
 )
+METADATA_SCHEMA_URI = (
+  "gs://google-cloud-aiplatform/schema/dataset/metadata/text_1.0.0.yaml"
+)
 
 @pytest.fixture(scope="function", autouse=True)
 def setup(create_dataset):
   create_dataset(PROJECT_ID, LOCATION, METADATA_SCHEMA_URI)
+  yield
+
+@pytest.fixture(scope="function", autouse=True)
+def teardown(teardown_dataset):
   yield
 
 def test_ucaip_generated_import_data_text_sentiment_analysis_sample(
