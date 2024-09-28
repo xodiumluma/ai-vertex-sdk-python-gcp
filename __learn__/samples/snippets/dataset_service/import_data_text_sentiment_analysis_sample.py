@@ -9,3 +9,7 @@ def import_data_text_sentiment_analysis_sample(
   api_endpoint: str = "us-central1-aiplatform.googleapis.com",
   timeout: int = 1800,
 ):
+  # regional API endpoints
+  client_options = {"api_endpoint": api_endpoint}
+  # reusable client
+  client = aiplatform.gapic.DatasetServiceClient(client_options=client_options)
