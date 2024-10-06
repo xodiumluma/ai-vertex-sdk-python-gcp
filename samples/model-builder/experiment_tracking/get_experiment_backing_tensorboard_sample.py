@@ -16,21 +16,18 @@
 from google.cloud import aiplatform
 
 
-def create_experiment_default_tensorboard_sample(
+def get_experiment_backing_tensorboard_resource_name_sample(
     experiment_name: str,
-    experiment_description: str,
     project: str,
     location: str,
 ):
-    aiplatform.init(
-        experiment=experiment_name,
-        experiment_description=experiment_description,
+    backing_tensorboard = aiplatform.Experiment(
         project=project,
         location=location,
-    )
+        experiment_name=experiment_name
+    ).get_backing_tensorboard_resource()
 
-    tensorboard = aiplatform.Experiment(experiment_name).get_backing_tensorboard_resource()
-    print(f"Tensorboard resource name: {tensorboard.name}")
+    return backing_tensorboard.name
 
 
 #  [END aiplatform_sdk_create_experiment_default_tensorboard_sample]
